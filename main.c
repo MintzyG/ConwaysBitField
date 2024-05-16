@@ -10,6 +10,7 @@
 #define WIDTH RESOLUTION
 #define HEIGHT 8 * RESOLUTION
 #define BLOCK_SIZE 8
+#define SEPARATOR "▒▒"
 #define ALIVE "██"
 #define DEAD "  "
 
@@ -237,7 +238,10 @@ int main() {
   while (1){
     Graph(*Master);
     Iterate(G, Copy, Master);
-    // printf("\n");
+    for(int i = 0; i < WIDTH * BLOCK_SIZE; i++){
+      printf(SEPARATOR);
+    }
+    printf("\n");
     Graph(*Master);
     usleep(100000);
     system("clear");
