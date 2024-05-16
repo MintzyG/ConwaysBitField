@@ -3,13 +3,23 @@
 #include <stdlib.h>
 #include <time.h>
 
-#ifndef RESOLUTION
-#define RESOLUTION 8
+#ifndef DELAY
+#define DELAY 100000
 #endif
 
-#define WIDTH RESOLUTION
-#define HEIGHT 8 * RESOLUTION
+#ifndef WIDTH
+#define WIDTH 8
+#endif
+
+#ifndef HEIGHT
+#define HEIGHT 8
+#endif
+
+#define _WIDTH WIDTH
+#define _HEIGHT 8 * HEIGHT
+
 #define BLOCK_SIZE 8
+
 #define SEPARATOR "▒▒"
 #define ALIVE "██"
 #define DEAD "  "
@@ -119,8 +129,8 @@ char GetBlockCell(union block G, short index) {
 }
 
 char GetCellHelper(union block** board, short linha, short coluna){
-  linha = (linha+(RESOLUTION * BLOCK_SIZE))%(RESOLUTION * BLOCK_SIZE);
-  coluna = (coluna+(RESOLUTION * BLOCK_SIZE))%(RESOLUTION * BLOCK_SIZE);
+  linha = (linha+(_HEIGHT))%(_HEIGHT);
+  coluna = (coluna+(_WIDTH * BLOCK_SIZE))%(_WIDTH * BLOCK_SIZE);
   return GetBlockCell(board[linha][coluna/BLOCK_SIZE], coluna%BLOCK_SIZE);
 }
 
@@ -159,9 +169,9 @@ char GetNeighbours(union block** board, unsigned char linha, unsigned char colun
 
 void Graph(union block** board) {
   char state = 0;
-  for (int i = 0; i < HEIGHT; i++) {
+  for (int i = 0; i < _HEIGHT; i++) {
   printf(SEPARATOR);
-    for (int j = 0; j < WIDTH; j++) {
+    for (int j = 0; j < _WIDTH; j++) {
       for (int k = 0; k < BLOCK_SIZE; k++){
         state = GetBlockCell(board[i][j], k);
         if (state == 1) {
@@ -183,8 +193,8 @@ void Iterate(union block** G, union block** Copy, union block*** Master) {
   { *Master = G; }
 
   char state = 0;
-  for(int i = 0; i < HEIGHT; i++){
-    for(int j = 0; j < HEIGHT; j++){
+  for(int i = 0; i < _HEIGHT; i++){
+    for(int j = 0; j < _WIDTH * BLOCK_SIZE; j++){
       if (*Master == Copy) {
         state = GetNeighbours(G, i, j);
         SetBlockCell(Copy, i, j, state);
@@ -198,18 +208,18 @@ void Iterate(union block** G, union block** Copy, union block*** Master) {
 
 int main() {
   srand(clock());
-  union block** G = calloc(HEIGHT, sizeof *G);
-  for (int i = 0; i < HEIGHT; i++){
-    G[i] = calloc(WIDTH, sizeof(union block));
-    for (int j = 0; j < WIDTH; j++) {
+  union block** G = calloc(_HEIGHT, sizeof *G);
+  for (int i = 0; i < _HEIGHT; i++){
+    G[i] = calloc(_WIDTH, sizeof(union block));
+    for (int j = 0; j < _WIDTH; j++) {
       G[i][j].cells = 0;
     }
   }
 
-  union block** Copy = calloc(HEIGHT, sizeof *G);
-  for (int i = 0; i < HEIGHT; i++){
-    Copy[i] = calloc(WIDTH, sizeof(union block));
-    for (int j = 0; j < WIDTH; j++) {
+  union block** Copy = calloc(_HEIGHT, sizeof *G);
+  for (int i = 0; i < _HEIGHT; i++){
+    Copy[i] = calloc(_WIDTH, sizeof(union block));
+    for (int j = 0; j < _WIDTH; j++) {
       Copy[i][j].cells = 0;
     }
   }
@@ -217,77 +227,81 @@ int main() {
   union block*** Master = calloc(1, sizeof *Master);
   *Master = G;
 
-  for(int i = 0; i < HEIGHT; i++){
-    for(int j = 0; j < WIDTH; j++){
-      // G[i][j].cells = rand() % 256;
+  for(int i = 0; i < _HEIGHT; i++){
+    for(int j = 0; j < _WIDTH; j++){
+      #ifdef RAND
+      G[i][j].cells = rand() % 256;
+      #else
       G[i][j].cells = 0;
+      #endif
     }
   }
 
   // How to draw:
   // G[LINE][BLOCK].cells = ENCODING;
+  #ifndef RAND
+  G[_HEIGHT/2][_WIDTH/2].cells = 2;
+  G[(_HEIGHT/2) + 1][_WIDTH/2].cells = 1;
+  G[(_HEIGHT/2) + 2][_WIDTH/2].cells = 7;
+  #endif
 
-  // G[HEIGHT/2][WIDTH/2].cells = 2;
-  // G[(HEIGHT/2) + 1][WIDTH/2].cells = 1;
-  // G[(HEIGHT/2) + 2][WIDTH/2].cells = 7;
-
-  G[16-10][4].cells = 64;
-  G[17-10][4].cells = 80;
-  G[18-10][4].cells = 12;
-  G[19-10][4].cells = 12;
-  G[20-10][4].cells = 12;
-  G[21-10][4].cells = 80;
-  G[22-10][4].cells = 64;
-
-  G[18-10][6].cells = 3;
-  G[19-10][6].cells = 3;
-
-  G[18-10][3].cells = 12;
-  G[19-10][3].cells = 34;
-  G[20-10][3].cells = 65;
-  G[21-10][3].cells = 209;
-  G[22-10][3].cells = 65;
-  G[23-10][3].cells = 34;
-  G[24-10][3].cells = 12;
-
-  G[20-10][1].cells = 192;
-  G[21-10][1].cells = 192;
-
-  G[49+7][4].cells = 64;
-  G[50+7][4].cells = 80;
-  G[51+7][4].cells = 12;
-  G[52+7][4].cells = 12;
-  G[53+7][4].cells = 12;
-  G[54+7][4].cells = 80;
-  G[55+7][4].cells = 64;
-
-  G[52+7][6].cells = 3;
-  G[53+7][6].cells = 3;
-
-  G[47+7][3].cells = 12;
-  G[48+7][3].cells = 34;
-  G[49+7][3].cells = 65;
-  G[50+7][3].cells = 209;
-  G[51+7][3].cells = 65;
-  G[52+7][3].cells = 34;
-  G[53+7][3].cells = 12;
-
-  G[50+7][1].cells = 192;
-  G[51+7][1].cells = 192;
+  // G[16-10][4].cells = 64;
+  // G[17-10][4].cells = 80;
+  // G[18-10][4].cells = 12;
+  // G[19-10][4].cells = 12;
+  // G[20-10][4].cells = 12;
+  // G[21-10][4].cells = 80;
+  // G[22-10][4].cells = 64;
+  //
+  // G[18-10][6].cells = 3;
+  // G[19-10][6].cells = 3;
+  //
+  // G[18-10][3].cells = 12;
+  // G[19-10][3].cells = 34;
+  // G[20-10][3].cells = 65;
+  // G[21-10][3].cells = 209;
+  // G[22-10][3].cells = 65;
+  // G[23-10][3].cells = 34;
+  // G[24-10][3].cells = 12;
+  //
+  // G[20-10][1].cells = 192;
+  // G[21-10][1].cells = 192;
+  //
+  // G[49+7][4].cells = 64;
+  // G[50+7][4].cells = 80;
+  // G[51+7][4].cells = 12;
+  // G[52+7][4].cells = 12;
+  // G[53+7][4].cells = 12;
+  // G[54+7][4].cells = 80;
+  // G[55+7][4].cells = 64;
+  //
+  // G[52+7][6].cells = 3;
+  // G[53+7][6].cells = 3;
+  //
+  // G[47+7][3].cells = 12;
+  // G[48+7][3].cells = 34;
+  // G[49+7][3].cells = 65;
+  // G[50+7][3].cells = 209;
+  // G[51+7][3].cells = 65;
+  // G[52+7][3].cells = 34;
+  // G[53+7][3].cells = 12;
+  //
+  // G[50+7][1].cells = 192;
+  // G[51+7][1].cells = 192;
 
   while (1){
-    for(int i = 0; i < WIDTH * BLOCK_SIZE + 2; i++){
+    for(int i = 0; i < _WIDTH * BLOCK_SIZE + 2; i++){
       printf(SEPARATOR);
     }
     printf("\n");
     Graph(*Master);
     // getchar();
     Iterate(G, Copy, Master);
-    for(int i = 0; i < WIDTH * BLOCK_SIZE + 2; i++){
+    for(int i = 0; i < _WIDTH * BLOCK_SIZE + 2; i++){
       printf(SEPARATOR);
     }
     printf("\n");
-    // usleep(100);
+    usleep(DELAY*1000);
     system("clear");
   }
   return 0;
