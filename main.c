@@ -4,7 +4,7 @@
 #include <time.h>
 
 #ifndef RESOLUTION
-  #define RESOLUTION 8
+#define RESOLUTION 8
 #endif
 
 #define WIDTH RESOLUTION
@@ -85,92 +85,27 @@ char GetBlockCell(union block G, short index) {
   };
 }
 
-void SwitchColuna(union block** board, unsigned char linha, char coluna, char* C, char* D) {
-  switch (coluna) {
-    case 0:
-      *C = GetBlockCell(board[linha][WIDTH - 1], (WIDTH - 1)%BLOCK_SIZE);
-      *D = GetBlockCell(board[linha][0], 1);
-      break;
-    case HEIGHT - 1:
-      *C = GetBlockCell(board[linha][WIDTH - 1], BLOCK_SIZE - 2);
-      *D = GetBlockCell(board[linha][0], 0);
-      break;
-    default:
-      *C = GetBlockCell(board[linha][(coluna - 1)/BLOCK_SIZE], (coluna - 1)%BLOCK_SIZE);
-      *D = GetBlockCell(board[linha][(coluna + 1)/BLOCK_SIZE], (coluna + 1)%BLOCK_SIZE);
-      break;
-  };
+char GetCellHelper(union block** board, unsigned char linha, unsigned char coluna){
+  linha = (linha+64)%64;
+  coluna = (coluna+64)%64;
+  return GetBlockCell(board[linha][coluna/BLOCK_SIZE], coluna%BLOCK_SIZE);
 }
 
 char GetNeighbours(union block** board, unsigned char linha, unsigned char coluna) {
   char A = 0, B = 0, C = 0, D = 0;
-  char DA = 0, DB = 0, DC = 0, DD = 0; 
+  char DA = 0, DB = 0, DC = 0, DD = 0;
 
-  switch (linha) {
-    case 0:
-      A = GetBlockCell(board[HEIGHT - 1][coluna/BLOCK_SIZE], coluna%BLOCK_SIZE);
-      B = GetBlockCell(board[1][coluna/BLOCK_SIZE], coluna%BLOCK_SIZE);
-      SwitchColuna(board, linha, coluna, &C, &D);
-      if (coluna == 0) {
-        DA = GetBlockCell(board[HEIGHT - 1][WIDTH - 1], BLOCK_SIZE - 1);
-        DB = GetBlockCell(board[HEIGHT - 1][0], 1);
-        DC = GetBlockCell(board[1][WIDTH - 1], BLOCK_SIZE - 1);
-        DD = GetBlockCell(board[1][0], 1);
-      } else if (coluna == HEIGHT - 1) {
-        DA = GetBlockCell(board[HEIGHT - 1][WIDTH - 1], BLOCK_SIZE - 2);
-        DB = GetBlockCell(board[HEIGHT - 1][0], 0);
-        DC = GetBlockCell(board[1][WIDTH - 1], BLOCK_SIZE - 2);
-        DD = GetBlockCell(board[1][0], 0);
-      } else {
-        DA = GetBlockCell(board[HEIGHT - 1][(coluna - 1)/BLOCK_SIZE], (coluna - 1)%BLOCK_SIZE);
-        DB = GetBlockCell(board[HEIGHT - 1][(coluna + 1)/BLOCK_SIZE], (coluna + 1)%BLOCK_SIZE);
-        DC = GetBlockCell(board[1][(coluna - 1)/BLOCK_SIZE], (coluna - 1)%BLOCK_SIZE);
-        DD = GetBlockCell(board[1][(coluna + 1)/BLOCK_SIZE], (coluna + 1)%BLOCK_SIZE);
-      }
-      break;
-    case HEIGHT - 1:
-      A = GetBlockCell(board[HEIGHT - 2][coluna/BLOCK_SIZE], coluna%BLOCK_SIZE);
-      B = GetBlockCell(board[0][coluna/BLOCK_SIZE], coluna%BLOCK_SIZE);
-      SwitchColuna(board, linha, coluna, &C, &D);
-      if (coluna == 0) {
-        DA = GetBlockCell(board[HEIGHT - 2][WIDTH - 1], BLOCK_SIZE - 1);
-        DB = GetBlockCell(board[HEIGHT - 2][0], 1);
-        DC = GetBlockCell(board[0][WIDTH - 1], BLOCK_SIZE - 1);
-        DD = GetBlockCell(board[0][0], 1);
-      } else if (coluna == HEIGHT - 1) {
-        DA = GetBlockCell(board[HEIGHT - 2][WIDTH - 1], BLOCK_SIZE - 2);
-        DB = GetBlockCell(board[HEIGHT - 2][0], 0);
-        DC = GetBlockCell(board[0][WIDTH - 1], BLOCK_SIZE - 2);
-        DD = GetBlockCell(board[0][0], 0);
-      } else {
-        DA = GetBlockCell(board[HEIGHT - 2][(coluna - 1)/BLOCK_SIZE], (coluna - 1)%BLOCK_SIZE);
-        DB = GetBlockCell(board[HEIGHT - 2][(coluna + 1)/BLOCK_SIZE], (coluna + 1)%BLOCK_SIZE);
-        DC = GetBlockCell(board[0][(coluna - 1)/BLOCK_SIZE], (coluna - 1)%BLOCK_SIZE);
-        DD = GetBlockCell(board[0][(coluna + 1)/BLOCK_SIZE], (coluna + 1)%BLOCK_SIZE);
-      }
-      break;
-    default:
-      A = GetBlockCell(board[linha + 1][coluna/BLOCK_SIZE], coluna%BLOCK_SIZE);
-      B = GetBlockCell(board[linha - 1][coluna/BLOCK_SIZE], coluna%BLOCK_SIZE);
-      SwitchColuna(board, linha, coluna, &C, &D);
-      if (coluna == 0) {
-        DA = GetBlockCell(board[linha + 1][WIDTH - 1], BLOCK_SIZE - 1);
-        DB = GetBlockCell(board[linha + 1][0], 1);
-        DC = GetBlockCell(board[linha - 1][WIDTH - 1], BLOCK_SIZE - 1);
-        DD = GetBlockCell(board[linha - 1][0], 1);
-      } else if (coluna == HEIGHT - 1) {
-        DA = GetBlockCell(board[linha + 1][WIDTH - 1], BLOCK_SIZE - 2);
-        DB = GetBlockCell(board[linha + 1][0], 0);
-        DC = GetBlockCell(board[linha - 1][WIDTH - 1], BLOCK_SIZE - 2);
-        DD = GetBlockCell(board[linha - 1][0], 0);
-      } else {
-        DA = GetBlockCell(board[linha + 1][(coluna - 1)/BLOCK_SIZE], (coluna - 1)%BLOCK_SIZE);
-        DB = GetBlockCell(board[linha + 1][(coluna + 1)/BLOCK_SIZE], (coluna + 1)%BLOCK_SIZE);
-        DC = GetBlockCell(board[linha - 1][(coluna - 1)/BLOCK_SIZE], (coluna - 1)%BLOCK_SIZE);
-        DD = GetBlockCell(board[linha - 1][(coluna + 1)/BLOCK_SIZE], (coluna + 1)%BLOCK_SIZE);
-      }
-      break;
-  };
+  DA = GetCellHelper(board, linha - 1,coluna - 1);
+  A = GetCellHelper(board, linha - 1,coluna);
+  DB = GetCellHelper(board, linha - 1,coluna + 1);
+
+  B = GetCellHelper(board, linha,coluna - 1);
+  C = GetCellHelper(board, linha,coluna + 1);
+
+  DC = GetCellHelper(board, linha + 1,coluna - 1);
+  D = GetCellHelper(board, linha + 1,coluna);
+  DD = GetCellHelper(board, linha + 1,coluna + 1);
+
 
   char count = A + B + C + D + DA + DB + DC + DD;
   if (count >= 4) {
@@ -205,11 +140,11 @@ void Graph(union block** board) {
 }
 
 void Iterate(union block** G, union block** Copy, union block*** Master) {
-  if (*Master == G) 
-  { *Master = Copy; } 
-  else 
+  if (*Master == G)
+  { *Master = Copy; }
+  else
   { *Master = G; }
-  
+
   char state = 0;
   for(int i = 0; i < HEIGHT; i++){
     for(int j = 0; j < HEIGHT; j++){
@@ -301,7 +236,6 @@ int main() {
 
   while (1){
     Graph(*Master);
-    // getchar();
     Iterate(G, Copy, Master);
     // printf("\n");
     Graph(*Master);
