@@ -217,14 +217,18 @@ int main() {
 
   for(int i = 0; i < HEIGHT; i++){
     for(int j = 0; j < WIDTH; j++){
-      G[i][j].cells = rand() % 256;
-      // G[i][j].cells = 0;
+      // G[i][j].cells = rand() % 256;
+      G[i][j].cells = 0;
     }
   }
 
   // How to draw:
   // G[LINE][BLOCK].cells = ENCODING;
-  //
+
+  G[HEIGHT/2][WIDTH/2].cells = 2;
+  G[(HEIGHT/2) + 1][WIDTH/2].cells = 1;
+  G[(HEIGHT/2) + 2][WIDTH/2].cells = 7;
+
   // G[16-10][4].cells = 64;
   // G[17-10][4].cells = 80;
   // G[18-10][4].cells = 12;
@@ -268,16 +272,16 @@ int main() {
   //
   // G[50+7][1].cells = 192;
   // G[51+7][1].cells = 192;
-  //
+
   while (1){
-    Graph(*Master);
-    Iterate(G, Copy, Master);
     for(int i = 0; i < WIDTH * BLOCK_SIZE; i++){
       printf(SEPARATOR);
     }
     printf("\n");
     Graph(*Master);
-    usleep(100000);
+    // getchar();
+    Iterate(G, Copy, Master);
+    // usleep(100);
     system("clear");
   }
   return 0;
