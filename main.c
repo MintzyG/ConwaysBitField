@@ -118,7 +118,7 @@ char GetBlockCell(union block G, short index) {
   };
 }
 
-char GetCellHelper(union block** board, unsigned char linha, unsigned char coluna){
+char GetCellHelper(union block** board, short linha, short coluna){
   linha = (linha+(RESOLUTION * BLOCK_SIZE))%(RESOLUTION * BLOCK_SIZE);
   coluna = (coluna+(RESOLUTION * BLOCK_SIZE))%(RESOLUTION * BLOCK_SIZE);
   return GetBlockCell(board[linha][coluna/BLOCK_SIZE], coluna%BLOCK_SIZE);
@@ -225,53 +225,53 @@ int main() {
   // How to draw:
   // G[LINE][BLOCK].cells = ENCODING;
 
-  G[HEIGHT/2][WIDTH/2].cells = 2;
-  G[(HEIGHT/2) + 1][WIDTH/2].cells = 1;
-  G[(HEIGHT/2) + 2][WIDTH/2].cells = 7;
+  // G[HEIGHT/2][WIDTH/2].cells = 2;
+  // G[(HEIGHT/2) + 1][WIDTH/2].cells = 1;
+  // G[(HEIGHT/2) + 2][WIDTH/2].cells = 7;
 
-  // G[16-10][4].cells = 64;
-  // G[17-10][4].cells = 80;
-  // G[18-10][4].cells = 12;
-  // G[19-10][4].cells = 12;
-  // G[20-10][4].cells = 12;
-  // G[21-10][4].cells = 80;
-  // G[22-10][4].cells = 64;
-  //
-  // G[18-10][6].cells = 3;
-  // G[19-10][6].cells = 3;
-  //
-  // G[18-10][3].cells = 12;
-  // G[19-10][3].cells = 34;
-  // G[20-10][3].cells = 65;
-  // G[21-10][3].cells = 209;
-  // G[22-10][3].cells = 65;
-  // G[23-10][3].cells = 34;
-  // G[24-10][3].cells = 12;
-  //
-  // G[20-10][1].cells = 192;
-  // G[21-10][1].cells = 192;
-  //
-  // G[49+7][4].cells = 64;
-  // G[50+7][4].cells = 80;
-  // G[51+7][4].cells = 12;
-  // G[52+7][4].cells = 12;
-  // G[53+7][4].cells = 12;
-  // G[54+7][4].cells = 80;
-  // G[55+7][4].cells = 64;
-  //
-  // G[52+7][6].cells = 3;
-  // G[53+7][6].cells = 3;
-  //
-  // G[47+7][3].cells = 12;
-  // G[48+7][3].cells = 34;
-  // G[49+7][3].cells = 65;
-  // G[50+7][3].cells = 209;
-  // G[51+7][3].cells = 65;
-  // G[52+7][3].cells = 34;
-  // G[53+7][3].cells = 12;
-  //
-  // G[50+7][1].cells = 192;
-  // G[51+7][1].cells = 192;
+  G[16-10][4].cells = 64;
+  G[17-10][4].cells = 80;
+  G[18-10][4].cells = 12;
+  G[19-10][4].cells = 12;
+  G[20-10][4].cells = 12;
+  G[21-10][4].cells = 80;
+  G[22-10][4].cells = 64;
+
+  G[18-10][6].cells = 3;
+  G[19-10][6].cells = 3;
+
+  G[18-10][3].cells = 12;
+  G[19-10][3].cells = 34;
+  G[20-10][3].cells = 65;
+  G[21-10][3].cells = 209;
+  G[22-10][3].cells = 65;
+  G[23-10][3].cells = 34;
+  G[24-10][3].cells = 12;
+
+  G[20-10][1].cells = 192;
+  G[21-10][1].cells = 192;
+
+  G[49+7][4].cells = 64;
+  G[50+7][4].cells = 80;
+  G[51+7][4].cells = 12;
+  G[52+7][4].cells = 12;
+  G[53+7][4].cells = 12;
+  G[54+7][4].cells = 80;
+  G[55+7][4].cells = 64;
+
+  G[52+7][6].cells = 3;
+  G[53+7][6].cells = 3;
+
+  G[47+7][3].cells = 12;
+  G[48+7][3].cells = 34;
+  G[49+7][3].cells = 65;
+  G[50+7][3].cells = 209;
+  G[51+7][3].cells = 65;
+  G[52+7][3].cells = 34;
+  G[53+7][3].cells = 12;
+
+  G[50+7][1].cells = 192;
+  G[51+7][1].cells = 192;
 
   while (1){
     for(int i = 0; i < WIDTH * BLOCK_SIZE; i++){
@@ -281,6 +281,10 @@ int main() {
     Graph(*Master);
     // getchar();
     Iterate(G, Copy, Master);
+    for(int i = 0; i < WIDTH * BLOCK_SIZE; i++){
+      printf(SEPARATOR);
+    }
+    printf("\n");
     // usleep(100);
     system("clear");
   }
