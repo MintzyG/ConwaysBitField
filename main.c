@@ -28,10 +28,8 @@ union block {
   unsigned char cells;
 };
 
-void Graph(union block**);
-void SetBlockCell(union block** G, short linha, short coluna, char value) {
-  union block* B = &(G[linha][coluna/BLOCK_SIZE]);
-  switch (coluna%BLOCK_SIZE) {
+void SetBlockCell(union block B, char cell, char value) {
+  switch (cell) {
     case 0:
       B->cell_group.a = value;
       break;
@@ -60,6 +58,14 @@ void SetBlockCell(union block** G, short linha, short coluna, char value) {
       printf("Tried to SET out of struct bounds\n");
       exit(1);
   };
+
+}
+
+void Graph(union block**);
+void SetMatrixBlockCell(union block** G, short linha, short coluna, char value) {
+  union block* B = &(G[linha][coluna/BLOCK_SIZE]);
+  char cell = coluna%BLOCK_SIZE;
+  SetBlockCell(B, cell, value);
 }
 
 char GetBlockCell(union block G, short index) {
@@ -93,22 +99,23 @@ char GetCellHelper(union block** board, unsigned char linha, unsigned char colun
 }
 
 char GetNeighbours(union block** board, unsigned char linha, unsigned char coluna) {
-  char A = 0, B = 0, C = 0, D = 0;
-  char DA = 0, DB = 0, DC = 0, DD = 0;
+  union block neighbours;
 
-  DA = GetCellHelper(board, linha - 1,coluna - 1);
-  A = GetCellHelper(board, linha - 1,coluna);
-  DB = GetCellHelper(board, linha - 1,coluna + 1);
+  SetBlockCell(board[linha][coluna/BLOCK_SIZE], coluna%BLOCK_SIZE,GetCellHelper(board, linha - 1,coluna - 1));
+  SetBlockCell(board[linha][coluna/BLOCK_SIZE], coluna%BLOCK_SIZE,GetCellHelper(board, linha - 1,coluna));
+  SetBlockCell(board[linha][coluna/BLOCK_SIZE], coluna%BLOCK_SIZE,GetCellHelper(board, linha - 1,coluna + 1));
 
-  B = GetCellHelper(board, linha,coluna - 1);
-  C = GetCellHelper(board, linha,coluna + 1);
+  SetBlockCell(board[linha][coluna/BLOCK_SIZE], coluna%BLOCK_SIZE,GetCellHelper(board, linha,coluna - 1));
+  SetBlockCell(board[linha][coluna/BLOCK_SIZE], coluna%BLOCK_SIZE,GetCellHelper(board, linha,coluna + 1));
 
-  DC = GetCellHelper(board, linha + 1,coluna - 1);
-  D = GetCellHelper(board, linha + 1,coluna);
-  DD = GetCellHelper(board, linha + 1,coluna + 1);
+  SetBlockCell(board[linha][coluna/BLOCK_SIZE], coluna%BLOCK_SIZE,GetCellHelper(board, linha + 1,coluna - 1));
+  SetBlockCell(board[linha][coluna/BLOCK_SIZE], coluna%BLOCK_SIZE,GetCellHelper(board, linha + 1,coluna));
+  SetBlockCell(board[linha][coluna/BLOCK_SIZE], coluna%BLOCK_SIZE,GetCellHelper(board, linha + 1,coluna + 1));
 
-
-  char count = A + B + C + D + DA + DB + DC + DD;
+  char count = 0;
+  for (int i = 0; i < BLOCK_SIZE; i++) {
+    count += GetBlockCell(neighbours, i);
+  }
   if (count >= 4) {
     return 0;
   } else if (count == 2) {
@@ -151,10 +158,10 @@ void Iterate(union block** G, union block** Copy, union block*** Master) {
     for(int j = 0; j < HEIGHT; j++){
       if (*Master == Copy) {
         state = GetNeighbours(G, i, j);
-        SetBlockCell(Copy, i, j, state);
+        SetMatrixBlockCell(Copy, i, j, state);
       } else {
         state = GetNeighbours(Copy, i, j);
-        SetBlockCell(G, i, j, state);
+        SetMatrixBlockCell(G, i, j, state);
       }
     }
   }
