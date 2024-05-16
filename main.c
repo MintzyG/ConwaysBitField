@@ -20,9 +20,11 @@
 
 #define BLOCK_SIZE 8
 
-#define SEPARATOR "▒▒"
-#define ALIVE "██"
-#define DEAD "  "
+#define SEPARATOR "▒"
+#define FULL "█"
+#define UP "▀"
+#define DOWN "▄"
+#define EMPTY " "
 
 union block {
   struct {
@@ -169,15 +171,24 @@ char GetNeighbours(union block** board, unsigned char linha, unsigned char colun
 
 void Graph(union block** board) {
   char state = 0;
-  for (int i = 0; i < _HEIGHT; i++) {
+  for (int i = 0; i < _HEIGHT; i+=2) {
   printf(SEPARATOR);
     for (int j = 0; j < _WIDTH; j++) {
       for (int k = 0; k < BLOCK_SIZE; k++){
-        state = GetBlockCell(board[i][j], k);
-        if (state == 1) {
-          printf(ALIVE);
-        } else {
-          printf(DEAD);
+        state = 2*(GetBlockCell(board[i][j], k)) + GetBlockCell(board[i+1][j], k);
+        switch (state){
+        case 0:
+          printf(EMPTY);
+          break;
+        case 1:
+          printf(DOWN);
+          break;
+        case 2:
+          printf(UP);
+          break;
+        case 3:
+          printf(FULL);
+          break;
         }
       }
     }
