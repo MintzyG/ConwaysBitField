@@ -26,7 +26,7 @@
 #include <locale.h>
 #define SEPARATOR 9618
 #else
-#define SEPARATOR "▒▒"
+#define SEPARATOR "▒"
 #define FULL "█"
 #define UP "▀"
 #define DOWN "▄"
