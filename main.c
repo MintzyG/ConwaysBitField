@@ -203,7 +203,7 @@ void Graph(union block** board) {
 }
 #else
 void Graph(union block** board) {
-  for(int i = 0; i < _WIDTH * BLOCK_SIZE + 2; i++){
+  for(int i = 0; i < (_WIDTH * BLOCK_SIZE) + 2; i++){
     printf(SEPARATOR);
   }
   printf("\n");
@@ -233,7 +233,7 @@ void Graph(union block** board) {
     printf(SEPARATOR);
     printf("\n");
   }
-  for(int i = 0; i < _WIDTH * BLOCK_SIZE + 2; i++){
+  for(int i = 0; i < (_WIDTH * BLOCK_SIZE) + 2; i++){
     printf(SEPARATOR);
   }
   printf("\n");
