@@ -170,6 +170,11 @@ char GetNeighbours(union block** board, unsigned char linha, unsigned char colun
 }
 
 void Graph(union block** board) {
+  for(int i = 0; i < _WIDTH * BLOCK_SIZE + 2; i++){
+      printf(SEPARATOR);
+    }
+    printf("\n");
+
   char state = 0;
   for (int i = 0; i < _HEIGHT; i+=2) {
   printf(SEPARATOR);
@@ -195,6 +200,10 @@ void Graph(union block** board) {
     printf(SEPARATOR);
     printf("\n");
   }
+    for(int i = 0; i < _WIDTH * BLOCK_SIZE + 2; i++){
+      printf(SEPARATOR);
+    }
+    printf("\n");
 }
 
 void Iterate(union block** G, union block** Copy, union block*** Master) {
@@ -301,17 +310,9 @@ int main() {
   // G[51+7][1].cells = 192;
 
   while (1){
-    for(int i = 0; i < _WIDTH * BLOCK_SIZE + 2; i++){
-      printf(SEPARATOR);
-    }
-    printf("\n");
     Graph(*Master);
     // getchar();
     Iterate(G, Copy, Master);
-    for(int i = 0; i < _WIDTH * BLOCK_SIZE + 2; i++){
-      printf(SEPARATOR);
-    }
-    printf("\n");
     usleep(DELAY*1000);
     system("clear");
   }
