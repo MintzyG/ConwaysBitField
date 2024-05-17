@@ -4,7 +4,7 @@
 #include <time.h>
 
 #ifndef DELAY
-#define DELAY 100000
+#define DELAY 100
 #endif
 
 #ifndef WIDTH
@@ -20,11 +20,18 @@
 
 #define BLOCK_SIZE 8
 
-#define SEPARATOR "▒"
+
+#ifndef TTY
+#include <wchar.h>
+#include <locale.h>
+#define SEPARATOR 9618
+#else
+#define SEPARATOR "▒▒"
 #define FULL "█"
 #define UP "▀"
 #define DOWN "▄"
 #define EMPTY " "
+#endif
 
 union block {
   struct {
@@ -72,7 +79,6 @@ void SetBlocks(union block* B, short cell, char value) {
   };
 }
 
-void Graph(union block**);
 void SetBlockCell(union block** G, short linha, short coluna, char value) {
   union block* B = &(G[linha][coluna/BLOCK_SIZE]);
   switch (coluna%BLOCK_SIZE) {
@@ -169,42 +175,70 @@ char GetNeighbours(union block** board, unsigned char linha, unsigned char colun
   }
 }
 
+#ifndef TTY
+void Graph(union block** board) {
+  for(int i = 0; i < (_WIDTH * BLOCK_SIZE/2) + 2; i++){ //odd width does not work correctly
+    wprintf(L"%lc", SEPARATOR);
+  }
+  wprintf(L"\n");
+
+  wchar_t state = 0;
+  for (int i = 0; i < _HEIGHT; i+=4) {
+    wprintf(L"%lc", SEPARATOR);
+    for (int j = 0; j < _WIDTH; j+=2) {
+      for (int k = 0; k < BLOCK_SIZE; k++){ //fix k value from neighbours
+        state = ((GetBlockCell(board[i][j], k)) + 2*GetBlockCell(board[i+1][j], k) + 4*GetBlockCell(board[i+2][j], k) +
+            8*GetBlockCell(board[i][j+1], k) + 16*(GetBlockCell(board[i+1][j+1], k)) + 32*GetBlockCell(board[i+2][j+1], k) +
+            64*GetBlockCell(board[i+3][j], k) + 128*GetBlockCell(board[i+3][j+1], k));
+
+        wprintf(L"%lc", state+10240); // Don't remove the 10240, it sets the start of the braille character table
+      }
+    }
+    wprintf(L"%lc\n", SEPARATOR);
+  }
+  for(int i = 0; i < (_WIDTH * BLOCK_SIZE/2) + 2; i++){ //odd width does not work correctly
+    wprintf(L"%lc", SEPARATOR);
+  }
+  wprintf(L"\n");
+}
+#else
 void Graph(union block** board) {
   for(int i = 0; i < _WIDTH * BLOCK_SIZE + 2; i++){
-      printf(SEPARATOR);
-    }
-    printf("\n");
+    printf(SEPARATOR);
+  }
+  printf("\n");
 
   char state = 0;
   for (int i = 0; i < _HEIGHT; i+=2) {
-  printf(SEPARATOR);
+    printf(SEPARATOR);
     for (int j = 0; j < _WIDTH; j++) {
       for (int k = 0; k < BLOCK_SIZE; k++){
         state = 2*(GetBlockCell(board[i][j], k)) + GetBlockCell(board[i+1][j], k);
         switch (state){
-        case 0:
-          printf(EMPTY);
-          break;
-        case 1:
-          printf(DOWN);
-          break;
-        case 2:
-          printf(UP);
-          break;
-        case 3:
-          printf(FULL);
-          break;
+          case 0:
+            printf(EMPTY);
+            break;
+          case 1:
+            printf(DOWN);
+            break;
+          case 2:
+            printf(UP);
+            break;
+          case 3:
+            printf(FULL);
+            break;
         }
       }
     }
     printf(SEPARATOR);
     printf("\n");
   }
-    for(int i = 0; i < _WIDTH * BLOCK_SIZE + 2; i++){
-      printf(SEPARATOR);
-    }
-    printf("\n");
+  for(int i = 0; i < _WIDTH * BLOCK_SIZE + 2; i++){
+    printf(SEPARATOR);
+  }
+  printf("\n");
 }
+#endif
 
 void Iterate(union block** G, union block** Copy, union block*** Master) {
   if (*Master == G)
@@ -227,6 +261,11 @@ void Iterate(union block** G, union block** Copy, union block*** Master) {
 }
 
 int main() {
+#ifndef TTY
+  setlocale(LC_ALL, "");
+  wprintf(L"");
+#endif
+
   srand(clock());
   union block** G = calloc(_HEIGHT, sizeof *G);
   for (int i = 0; i < _HEIGHT; i++){
@@ -249,21 +288,21 @@ int main() {
 
   for(int i = 0; i < _HEIGHT; i++){
     for(int j = 0; j < _WIDTH; j++){
-      #ifdef RAND
+#ifdef RAND
       G[i][j].cells = rand() % 256;
-      #else
+#else
       G[i][j].cells = 0;
-      #endif
+#endif
     }
   }
 
   // How to draw:
   // G[LINE][BLOCK].cells = ENCODING;
-  #ifndef RAND
+#ifndef RAND
   G[_HEIGHT/2][_WIDTH/2].cells = 2;
   G[(_HEIGHT/2) + 1][_WIDTH/2].cells = 1;
   G[(_HEIGHT/2) + 2][_WIDTH/2].cells = 7;
-  #endif
+#endif
 
   // G[16-10][4].cells = 64;
   // G[17-10][4].cells = 80;
