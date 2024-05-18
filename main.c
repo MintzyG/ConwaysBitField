@@ -142,7 +142,7 @@ char GetCellHelper(union block** board, short linha, short coluna){
   return GetBlockCell(board[linha][coluna/BLOCK_SIZE], coluna%BLOCK_SIZE);
 }
 
-char GetNeighbours(union block** board, unsigned char linha, unsigned char coluna) {
+char GetNeighbours(union block** board, short linha, short coluna) {
   union block neighbours;
 
   SetBlocks(&neighbours, 0, GetCellHelper(board, linha - 1,coluna - 1));
@@ -177,7 +177,7 @@ char GetNeighbours(union block** board, unsigned char linha, unsigned char colun
 
 #ifndef TTY
 void Graph(union block** board) {
-  for(int i = 0; i < (_WIDTH * BLOCK_SIZE/2) + 2; i++){ //odd width does not work correctly
+  for(int i = 0; i < (_WIDTH * BLOCK_SIZE/2) + 2; i++){
     wprintf(L"%lc", SEPARATOR);
   }
   wprintf(L"\n");
@@ -185,18 +185,23 @@ void Graph(union block** board) {
   wchar_t state = 0;
   for (int i = 0; i < _HEIGHT; i+=4) {
     wprintf(L"%lc", SEPARATOR);
-    for (int j = 0; j < _WIDTH; j+=2) {
-      for (int k = 0; k < BLOCK_SIZE; k++){ //fix k value from neighbours
-        state = ((GetBlockCell(board[i][j], k)) + 2*GetBlockCell(board[i+1][j], k) + 4*GetBlockCell(board[i+2][j], k) +
-            8*GetBlockCell(board[i][j+1], k) + 16*(GetBlockCell(board[i+1][j+1], k)) + 32*GetBlockCell(board[i+2][j+1], k) +
-            64*GetBlockCell(board[i+3][j], k) + 128*GetBlockCell(board[i+3][j+1], k));
+    for (int j = 0; j < _WIDTH; j++) {
+      for (int k = 0; k < BLOCK_SIZE; k+=2){
+        state = GetBlockCell(board[i][j], k);
+        state += 8*GetBlockCell(board[i][j], k+1);
+        state += 2*GetBlockCell(board[i+1][j], k);
+        state += 16*GetBlockCell(board[i+1][j], k+1);
+        state += 4*GetBlockCell(board[i+2][j], k);
+        state += 32*GetBlockCell(board[i+2][j], k+1);
+        state += 64*GetBlockCell(board[i+3][j], k);
+        state += 128*GetBlockCell(board[i+3][j], k+1);
 
         wprintf(L"%lc", state+10240); // Don't remove the 10240, it sets the start of the braille character table
       }
     }
     wprintf(L"%lc\n", SEPARATOR);
   }
-  for(int i = 0; i < (_WIDTH * BLOCK_SIZE/2) + 2; i++){ //odd width does not work correctly
+  for(int i = 0; i < (_WIDTH * BLOCK_SIZE/2) + 2; i++){
     wprintf(L"%lc", SEPARATOR);
   }
   wprintf(L"\n");
@@ -275,7 +280,7 @@ int main() {
     }
   }
 
-  union block** Copy = calloc(_HEIGHT, sizeof *G);
+  union block** Copy = calloc(_HEIGHT, sizeof *Copy);
   for (int i = 0; i < _HEIGHT; i++){
     Copy[i] = calloc(_WIDTH, sizeof(union block));
     for (int j = 0; j < _WIDTH; j++) {
@@ -302,6 +307,7 @@ int main() {
   G[_HEIGHT/2][_WIDTH/2].cells = 2;
   G[(_HEIGHT/2) + 1][_WIDTH/2].cells = 1;
   G[(_HEIGHT/2) + 2][_WIDTH/2].cells = 7;
+
 #endif
 
   // G[16-10][4].cells = 64;
