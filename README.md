@@ -1,2 +1,7 @@
 # ConwaysBitField
-Tried implementing Conway's Game of Life using bitfiels and unions in C to waste as little space as possible, failed hard when detecting neighbours
+
+|Game|
+:----:
+![](https://raw.githubusercontent.com/MintzyG/ConwaysBitField/main/assets/Game.png)
+
+Implementation of conways  game of life using bit fields, unions, and braille characters
