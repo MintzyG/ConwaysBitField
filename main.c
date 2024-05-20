@@ -177,14 +177,27 @@ char GetNeighbours(union block** board, short linha, short coluna) {
 
 #ifndef TTY
 void Graph(union block** board) {
-  for(int i = 0; i < (_WIDTH * BLOCK_SIZE/2) + 2; i++){
-    wprintf(L"%lc", SEPARATOR);
-  }
-  wprintf(L"\n");
-
+  wchar_t line[_WIDTH*BLOCK_SIZE + 3]; // +2 para o separador no início e no final
   wchar_t state = 0;
+
+  // Construir a linha para a borda superior
+  for(int i = 0; i < (_WIDTH * BLOCK_SIZE/2) + 2; i++){
+    line[i] = SEPARATOR;
+  }
+  line[(_WIDTH * BLOCK_SIZE/2) + 2] = L'\0'; // Terminar a string com null character
+  wprintf(L"%ls\n", line);
+
+  // Construir as linhas intermediárias
   for (int i = 0; i < _HEIGHT; i+=4) {
-    wprintf(L"%lc", SEPARATOR);
+    // Initialize line array for each row
+    for(int j = 0; j < _WIDTH * BLOCK_SIZE; j++) {
+      line[j + 1] = L'​'; // Initialize line with space, +1 to leave space for the left border
+    }
+
+    // Construir a borda esquerda
+    line[0] = SEPARATOR;
+
+    // Construir o conteúdo da linha
     for (int j = 0; j < _WIDTH; j++) {
       for (int k = 0; k < BLOCK_SIZE; k+=2){
         state = GetBlockCell(board[i][j], k);
@@ -196,16 +209,25 @@ void Graph(union block** board) {
         state += 64*GetBlockCell(board[i+3][j], k);
         state += 128*GetBlockCell(board[i+3][j], k+1);
 
-        wprintf(L"%lc", state+10240); // Don't remove the 10240, it sets the start of the braille character table
+        line[(j*BLOCK_SIZE) + k/2 + 1] = state+10240; // +1 para deixar espaço para a borda esquerda
       }
     }
-    wprintf(L"%lc\n", SEPARATOR);
+
+    // Adicionar a borda direita e imprimir a linha
+    line[_WIDTH * BLOCK_SIZE + 1] = SEPARATOR;
+    line[_WIDTH * BLOCK_SIZE + 2] = L'\0'; // Terminar a string com null character
+    wprintf(L"%ls\n", line);
   }
+
+  // Construir a linha para a borda inferior
   for(int i = 0; i < (_WIDTH * BLOCK_SIZE/2) + 2; i++){
-    wprintf(L"%lc", SEPARATOR);
+    line[i] = SEPARATOR;
   }
-  wprintf(L"\n");
+  line[(_WIDTH * BLOCK_SIZE/2) + 2] = L'\0'; // Terminar a string com null character
+  wprintf(L"%ls\n", line);
 }
+
+
 #else
 void Graph(union block** board) {
   for(int i = 0; i < (_WIDTH * BLOCK_SIZE) + 2; i++){
