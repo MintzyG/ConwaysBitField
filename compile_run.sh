@@ -2,11 +2,11 @@
 
 echo "How tall do you want the matrix from 1-16:"
 read Height
-Height=${Height:-10}
+Height=${Height:-16}
 
 echo "How wide do you want the matrix from 1-16:"
 read Width
-Width=${Width:-10}
+Width=${Width:-16}
 
 echo "Do you want a random board? (y/Y | n/N)"
 read Rand
@@ -14,7 +14,7 @@ Rand=${Rand:-Y}
 
 echo "What delay do you want 1ms - 1000ms:"
 read Delay
-Delay=${Delay:-125}
+Delay=${Delay:-100}
 
 echo "Are you going to run it through tty? (y/Y | n/N)"
 read Tty
