@@ -26,8 +26,6 @@ else
     Width=$(((Columns -2)/4))
   fi
 fi
-echo $Height
-echo $Width
 
 echo "Do you want a random board? (y/Y | n/N)"
 read Rand
