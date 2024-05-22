@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <time.h>
+#include <locale.h>
 
 #ifndef DELAY
 #define DELAY 100
@@ -20,18 +21,7 @@
 
 #define BLOCK_SIZE 8
 
-
-#ifndef TTY
-#include <wchar.h>
-#include <locale.h>
 #define SEPARATOR 9618
-#else
-#define SEPARATOR "▒"
-#define FULL "█"
-#define UP "▀"
-#define DOWN "▄"
-#define EMPTY " "
-#endif
 
 union block {
   struct {
@@ -177,93 +167,90 @@ char GetNeighbours(union block** board, short linha, short coluna) {
 
 #ifndef TTY
 void Graph(union block** board) {
-  wchar_t line[_WIDTH*BLOCK_SIZE + 3]; // +2 para o separador no início e no final
-  wchar_t state = 0;
+  wchar_t line[_WIDTH * BLOCK_SIZE / 2 + 3]; // +3 para os separadores e null caracter
+  char output_line[(_WIDTH * BLOCK_SIZE / 2 + 3) * sizeof(wchar_t)];
+  int state = 0;
 
-  // Construir a linha para a borda superior
-  for(int i = 0; i < (_WIDTH * BLOCK_SIZE/2) + 2; i++){
-    line[i] = SEPARATOR;
-  }
+  for(int i = 0; i < (_WIDTH * BLOCK_SIZE / 2) + 2; i++) {line[i] = SEPARATOR;} // Construir a linha para a borda superior
   line[(_WIDTH * BLOCK_SIZE/2) + 2] = L'\0'; // Terminar a string com null character
-  wprintf(L"%ls\n", line);
+  size_t len = wcstombs(output_line, line, sizeof(output_line)); // Converter wide char para char
+  fwrite(output_line, sizeof(char), len, stdout);
+  fwrite("\n", sizeof(char), 1, stdout);
 
-  // Construir as linhas intermediárias
-  for (int i = 0; i < _HEIGHT; i+=4) {
-    // Initialize line array for each row
-    for(int j = 0; j < _WIDTH * BLOCK_SIZE; j++) {
-      line[j + 1] = L'​'; // Initialize line with space, +1 to leave space for the left border
+  for (int i = 0; i < _HEIGHT; i += 4) {
+    line[0] = SEPARATOR; // Construir a borda esquerda
+
+    for (int j = 0; j < _WIDTH; j++) {
+      for (int k = 0; k < BLOCK_SIZE; k += 2) {
+        state = GetBlockCell(board[i][j], k);
+        state += 8 * GetBlockCell(board[i][j], k+1);
+        state += 2 * GetBlockCell(board[i+1][j], k);
+        state += 16 * GetBlockCell(board[i+1][j], k+1);
+        state += 4 * GetBlockCell(board[i+2][j], k);
+        state += 32 * GetBlockCell(board[i+2][j], k+1);
+        state += 64 * GetBlockCell(board[i+3][j], k);
+        state += 128 * GetBlockCell(board[i+3][j], k+1);
+
+        line[(j * BLOCK_SIZE) / 2 + k / 2 + 1] = state + 10240; // +1 para deixar espaço para a borda esquerda
+      }
     }
 
-    // Construir a borda esquerda
-    line[0] = SEPARATOR;
+    // Adicionar a borda direita e imprimir a linha
+    line[_WIDTH * BLOCK_SIZE / 2 + 1] = SEPARATOR;
+    line[(_WIDTH * BLOCK_SIZE/2) + 2] = L'\0'; // Terminar a string com null character
 
-    // Construir o conteúdo da linha
+    // Converter wide char para char
+    len = wcstombs(output_line, line, sizeof(output_line));
+    fwrite(output_line, sizeof(char), len, stdout);
+    fwrite("\n", sizeof(char), 1, stdout);
+  }
+
+  for(int i = 0; i < (_WIDTH * BLOCK_SIZE / 2) + 2; i++) {line[i] = SEPARATOR;} // Construir a linha para a borda inferior
+  line[(_WIDTH * BLOCK_SIZE/2) + 2] = L'\0'; // Terminar a string com null character
+  len = wcstombs(output_line, line, sizeof(output_line)); // Converter wide char para char
+  fwrite(output_line, sizeof(char), len, stdout);
+  fwrite("\n", sizeof(char), 1, stdout);
+}
+#else
+void Graph(union block** board) {
+  wchar_t chars[4] = {32,9600,9604,9608};
+  wchar_t line[_WIDTH * BLOCK_SIZE + 3]; // +3 para os separadores e null caracter
+  char output_line[(_WIDTH * BLOCK_SIZE + 3) * sizeof(wchar_t)];
+  int state = 0;
+
+  for(int i = 0; i < (_WIDTH * BLOCK_SIZE) + 2; i++) {line[i] = SEPARATOR;} // Construir a linha para a borda superior
+  line[(_WIDTH * BLOCK_SIZE) + 2] = L'\0'; // Terminar a string com null character
+  size_t len = wcstombs(output_line, line, sizeof(output_line)); // Converter wide char para char
+  fwrite(output_line, sizeof(char), len, stdout);
+  fwrite("\n", sizeof(char), 1, stdout);
+
+  for (int i = 0; i < _HEIGHT; i += 2) {
+    line[0] = SEPARATOR; // Construir a borda esquerda
+
     for (int j = 0; j < _WIDTH; j++) {
-      for (int k = 0; k < BLOCK_SIZE; k+=2){
+      for (int k = 0; k < BLOCK_SIZE; k++) {
         state = GetBlockCell(board[i][j], k);
-        state += 8*GetBlockCell(board[i][j], k+1);
-        state += 2*GetBlockCell(board[i+1][j], k);
-        state += 16*GetBlockCell(board[i+1][j], k+1);
-        state += 4*GetBlockCell(board[i+2][j], k);
-        state += 32*GetBlockCell(board[i+2][j], k+1);
-        state += 64*GetBlockCell(board[i+3][j], k);
-        state += 128*GetBlockCell(board[i+3][j], k+1);
+        state += 2 * GetBlockCell(board[i + 1][j], k);
 
-        line[(j*BLOCK_SIZE) + k/2 + 1] = state+10240; // +1 para deixar espaço para a borda esquerda
+        line[(j * BLOCK_SIZE) + k + 1] = chars[state]; // +1 para deixar espaço para a borda esquerda
       }
     }
 
     // Adicionar a borda direita e imprimir a linha
     line[_WIDTH * BLOCK_SIZE + 1] = SEPARATOR;
-    line[_WIDTH * BLOCK_SIZE + 2] = L'\0'; // Terminar a string com null character
-    wprintf(L"%ls\n", line);
+    line[(_WIDTH * BLOCK_SIZE) + 2] = L'\0'; // Terminar a string com null character
+
+    // Converter wide char para char
+    len = wcstombs(output_line, line, sizeof(output_line));
+    fwrite(output_line, sizeof(char), len, stdout);
+    fwrite("\n", sizeof(char), 1, stdout);
   }
 
-  // Construir a linha para a borda inferior
-  for(int i = 0; i < (_WIDTH * BLOCK_SIZE/2) + 2; i++){
-    line[i] = SEPARATOR;
-  }
-  line[(_WIDTH * BLOCK_SIZE/2) + 2] = L'\0'; // Terminar a string com null character
-  wprintf(L"%ls\n", line);
-}
-
-
-#else
-void Graph(union block** board) {
-  for(int i = 0; i < (_WIDTH * BLOCK_SIZE) + 2; i++){
-    printf(SEPARATOR);
-  }
-  printf("\n");
-
-  char state = 0;
-  for (int i = 0; i < _HEIGHT; i+=2) {
-    printf(SEPARATOR);
-    for (int j = 0; j < _WIDTH; j++) {
-      for (int k = 0; k < BLOCK_SIZE; k++){
-        state = 2*(GetBlockCell(board[i][j], k)) + GetBlockCell(board[i+1][j], k);
-        switch (state){
-          case 0:
-            printf(EMPTY);
-            break;
-          case 1:
-            printf(DOWN);
-            break;
-          case 2:
-            printf(UP);
-            break;
-          case 3:
-            printf(FULL);
-            break;
-        }
-      }
-    }
-    printf(SEPARATOR);
-    printf("\n");
-  }
-  for(int i = 0; i < (_WIDTH * BLOCK_SIZE) + 2; i++){
-    printf(SEPARATOR);
-  }
-  printf("\n");
+  for(int i = 0; i < (_WIDTH * BLOCK_SIZE) + 2; i++) {line[i] = SEPARATOR;} // Construir a linha para a borda inferior
+  line[(_WIDTH * BLOCK_SIZE) + 2] = L'\0'; // Terminar a string com null character
+  len = wcstombs(output_line, line, sizeof(output_line)); // Converter wide char para char
+  fwrite(output_line, sizeof(char), len, stdout);
+  fwrite("\n", sizeof(char), 1, stdout);
 }
 #endif
 
@@ -288,10 +275,8 @@ void Iterate(union block** G, union block** Copy, union block*** Master) {
 }
 
 int main() {
-#ifndef TTY
-  setlocale(LC_ALL, "");
-  wprintf(L"");
-#endif
+setlocale(LC_ALL, "");
+printf("\e[?25l");
 
   srand(clock());
   union block** G = calloc(_HEIGHT, sizeof *G);
