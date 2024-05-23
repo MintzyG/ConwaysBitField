@@ -1,0 +1,3 @@
+*.out
+ruleset.c
+ruleset.h
