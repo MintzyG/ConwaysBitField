@@ -4,7 +4,7 @@
 #include <unistd.h>
 
 char BSE(char rule[21]){
-  char Sc = 0, Ec = 0; 
+  char Sc = 0, Ec = 0;
 
   if (rule[0] != 'B'){ return 0; }
   for(int i = 0; i < 21; i++){
@@ -91,7 +91,7 @@ int main(){
   fclose(file);
 
   file = fopen("ruleset.c", "w");
-  fprintf(file, "#include \"rulseset.h\"\n\n");
+  fprintf(file, "#include \"ruleseset.h\"\n\n");
   fprintf(file, "char RuleStateManager(char state, char cState) {\n");
   fprintf(file, "  if (cState == 0) {\n");
 
