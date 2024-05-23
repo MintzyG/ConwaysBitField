@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+
+pushd ./modules
+./out.out
+popd
+
 echo "Do you want a max size board? (y/Y | n/N)"
 read Max
 Max=${Max:-N}
@@ -35,7 +40,7 @@ echo "What delay do you want 1ms - 1000ms:"
 read Delay
 Delay=${Delay:-100}
 
-gcc_cmd="gcc main.c -o game.out -DDELAY=$Delay -DWIDTH=$Width -DHEIGHT=$Height -Wall -Wextra -O3"
+gcc_cmd="gcc main.c modules/ruleset.c -o game.out -DDELAY=$Delay -DWIDTH=$Width -DHEIGHT=$Height -Wall -Wextra -O3 -Imodules"
 
 if [[ "$Rand" == "Y" || "$Rand" == "y" ]]; then
   gcc_cmd+=" -DRAND"
@@ -45,6 +50,4 @@ if [[ "$Tty" == "Y" || "$Tty" == "y" ]]; then
   gcc_cmd+=" -DTTY"
 fi
 
-eval $gcc_cmd
-
-./game.out
+eval $gcc_cmd && ./game.out

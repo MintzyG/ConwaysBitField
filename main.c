@@ -4,6 +4,8 @@
 #include <time.h>
 #include <locale.h>
 
+#include "ruleset.h"
+
 #ifndef DELAY
 #define DELAY 100
 #endif
@@ -151,104 +153,89 @@ char GetNeighbours(union block** board, short linha, short coluna) {
     count += GetBlockCell(neighbours, i);
   }
 
-  if (count >= 4) {
-    return 0;
-  } else if (count == 2) {
-    if (GetBlockCell(board[linha][coluna/BLOCK_SIZE], coluna%BLOCK_SIZE)){
-      return 1;
-    }
-    return 0;
-  } else if (count == 3) {
-    return 1;
-  } else {
-    return 0;
-  }
+  return RuleStateManager(count, GetBlockCell(board[linha][coluna/BLOCK_SIZE], coluna%BLOCK_SIZE));
 }
 
 #ifndef TTY
 void Graph(union block** board) {
-  wchar_t line[_WIDTH * BLOCK_SIZE / 2 + 3]; // +3 para os separadores e null caracter
+  wchar_t line[_WIDTH * BLOCK_SIZE / 2 + 3];
   char output_line[(_WIDTH * BLOCK_SIZE / 2 + 3) * sizeof(wchar_t)];
   int state = 0;
 
-  for(int i = 0; i < (_WIDTH * BLOCK_SIZE / 2) + 2; i++) {line[i] = SEPARATOR;} // Construir a linha para a borda superior
-  line[(_WIDTH * BLOCK_SIZE/2) + 2] = L'\0'; // Terminar a string com null character
-  size_t len = wcstombs(output_line, line, sizeof(output_line)); // Converter wide char para char
+  for(int i = 0; i < (_WIDTH * BLOCK_SIZE / 2) + 2; i++) {line[i] = SEPARATOR;}
+  line[(_WIDTH * BLOCK_SIZE/2) + 2] = L'\0';
+  size_t len = wcstombs(output_line, line, sizeof(output_line));
   fwrite(output_line, sizeof(char), len, stdout);
   fwrite("\n", sizeof(char), 1, stdout);
 
   for (int i = 0; i < _HEIGHT; i += 4) {
-    line[0] = SEPARATOR; // Construir a borda esquerda
+    line[0] = SEPARATOR;
 
     for (int j = 0; j < _WIDTH; j++) {
       for (int k = 0; k < BLOCK_SIZE; k += 2) {
         state = GetBlockCell(board[i][j], k);
-        state += 8 * GetBlockCell(board[i][j], k+1);
         state += 2 * GetBlockCell(board[i+1][j], k);
-        state += 16 * GetBlockCell(board[i+1][j], k+1);
         state += 4 * GetBlockCell(board[i+2][j], k);
+        state += 8 * GetBlockCell(board[i][j], k+1);
+        state += 16 * GetBlockCell(board[i+1][j], k+1);
         state += 32 * GetBlockCell(board[i+2][j], k+1);
         state += 64 * GetBlockCell(board[i+3][j], k);
         state += 128 * GetBlockCell(board[i+3][j], k+1);
 
-        line[(j * BLOCK_SIZE) / 2 + k / 2 + 1] = state + 10240; // +1 para deixar espaço para a borda esquerda
+        line[(j * BLOCK_SIZE) / 2 + k / 2 + 1] = state + 10240;
       }
     }
 
-    // Adicionar a borda direita e imprimir a linha
     line[_WIDTH * BLOCK_SIZE / 2 + 1] = SEPARATOR;
-    line[(_WIDTH * BLOCK_SIZE/2) + 2] = L'\0'; // Terminar a string com null character
+    line[(_WIDTH * BLOCK_SIZE/2) + 2] = L'\0';
 
-    // Converter wide char para char
     len = wcstombs(output_line, line, sizeof(output_line));
     fwrite(output_line, sizeof(char), len, stdout);
     fwrite("\n", sizeof(char), 1, stdout);
   }
 
-  for(int i = 0; i < (_WIDTH * BLOCK_SIZE / 2) + 2; i++) {line[i] = SEPARATOR;} // Construir a linha para a borda inferior
-  line[(_WIDTH * BLOCK_SIZE/2) + 2] = L'\0'; // Terminar a string com null character
-  len = wcstombs(output_line, line, sizeof(output_line)); // Converter wide char para char
+  for(int i = 0; i < (_WIDTH * BLOCK_SIZE / 2) + 2; i++) {line[i] = SEPARATOR;}
+  line[(_WIDTH * BLOCK_SIZE/2) + 2] = L'\0';
+  len = wcstombs(output_line, line, sizeof(output_line));
   fwrite(output_line, sizeof(char), len, stdout);
   fwrite("\n", sizeof(char), 1, stdout);
 }
 #else
 void Graph(union block** board) {
   wchar_t chars[4] = {32,9600,9604,9608};
-  wchar_t line[_WIDTH * BLOCK_SIZE + 3]; // +3 para os separadores e null caracter
+  wchar_t line[_WIDTH * BLOCK_SIZE + 3];
   char output_line[(_WIDTH * BLOCK_SIZE + 3) * sizeof(wchar_t)];
   int state = 0;
 
-  for(int i = 0; i < (_WIDTH * BLOCK_SIZE) + 2; i++) {line[i] = SEPARATOR;} // Construir a linha para a borda superior
-  line[(_WIDTH * BLOCK_SIZE) + 2] = L'\0'; // Terminar a string com null character
-  size_t len = wcstombs(output_line, line, sizeof(output_line)); // Converter wide char para char
+  for(int i = 0; i < (_WIDTH * BLOCK_SIZE) + 2; i++) {line[i] = SEPARATOR;}
+  line[(_WIDTH * BLOCK_SIZE) + 2] = L'\0';
+  size_t len = wcstombs(output_line, line, sizeof(output_line));
   fwrite(output_line, sizeof(char), len, stdout);
   fwrite("\n", sizeof(char), 1, stdout);
 
   for (int i = 0; i < _HEIGHT; i += 2) {
-    line[0] = SEPARATOR; // Construir a borda esquerda
+    line[0] = SEPARATOR;
 
     for (int j = 0; j < _WIDTH; j++) {
       for (int k = 0; k < BLOCK_SIZE; k++) {
         state = GetBlockCell(board[i][j], k);
         state += 2 * GetBlockCell(board[i + 1][j], k);
 
-        line[(j * BLOCK_SIZE) + k + 1] = chars[state]; // +1 para deixar espaço para a borda esquerda
+        line[(j * BLOCK_SIZE) + k + 1] = chars[state];
       }
     }
 
-    // Adicionar a borda direita e imprimir a linha
     line[_WIDTH * BLOCK_SIZE + 1] = SEPARATOR;
-    line[(_WIDTH * BLOCK_SIZE) + 2] = L'\0'; // Terminar a string com null character
+    line[(_WIDTH * BLOCK_SIZE) + 2] = L'\0';
 
-    // Converter wide char para char
     len = wcstombs(output_line, line, sizeof(output_line));
     fwrite(output_line, sizeof(char), len, stdout);
     fwrite("\n", sizeof(char), 1, stdout);
   }
 
-  for(int i = 0; i < (_WIDTH * BLOCK_SIZE) + 2; i++) {line[i] = SEPARATOR;} // Construir a linha para a borda inferior
-  line[(_WIDTH * BLOCK_SIZE) + 2] = L'\0'; // Terminar a string com null character
-  len = wcstombs(output_line, line, sizeof(output_line)); // Converter wide char para char
+  for(int i = 0; i < (_WIDTH * BLOCK_SIZE) + 2; i++) {line[i] = SEPARATOR;}
+  line[(_WIDTH * BLOCK_SIZE) + 2] = L'\0';
+  len = wcstombs(output_line, line, sizeof(output_line));
   fwrite(output_line, sizeof(char), len, stdout);
   fwrite("\n", sizeof(char), 1, stdout);
 }
@@ -308,58 +295,15 @@ printf("\e[?25l");
     }
   }
 
-  // How to draw:
-  // G[LINE][BLOCK].cells = ENCODING;
 #ifndef RAND
   G[_HEIGHT/2][_WIDTH/2].cells = 2;
   G[(_HEIGHT/2) + 1][_WIDTH/2].cells = 1;
   G[(_HEIGHT/2) + 2][_WIDTH/2].cells = 7;
-
+  // Add a micro-random input (8x1 block)
 #endif
 
-  // G[16-10][4].cells = 64;
-  // G[17-10][4].cells = 80;
-  // G[18-10][4].cells = 12;
-  // G[19-10][4].cells = 12;
-  // G[20-10][4].cells = 12;
-  // G[21-10][4].cells = 80;
-  // G[22-10][4].cells = 64;
-  //
-  // G[18-10][6].cells = 3;
-  // G[19-10][6].cells = 3;
-  //
-  // G[18-10][3].cells = 12;
-  // G[19-10][3].cells = 34;
-  // G[20-10][3].cells = 65;
-  // G[21-10][3].cells = 209;
-  // G[22-10][3].cells = 65;
-  // G[23-10][3].cells = 34;
-  // G[24-10][3].cells = 12;
-  //
-  // G[20-10][1].cells = 192;
-  // G[21-10][1].cells = 192;
-  //
-  // G[49+7][4].cells = 64;
-  // G[50+7][4].cells = 80;
-  // G[51+7][4].cells = 12;
-  // G[52+7][4].cells = 12;
-  // G[53+7][4].cells = 12;
-  // G[54+7][4].cells = 80;
-  // G[55+7][4].cells = 64;
-  //
-  // G[52+7][6].cells = 3;
-  // G[53+7][6].cells = 3;
-  //
-  // G[47+7][3].cells = 12;
-  // G[48+7][3].cells = 34;
-  // G[49+7][3].cells = 65;
-  // G[50+7][3].cells = 209;
-  // G[51+7][3].cells = 65;
-  // G[52+7][3].cells = 34;
-  // G[53+7][3].cells = 12;
-  //
-  // G[50+7][1].cells = 192;
-  // G[51+7][1].cells = 192;
+  // How to draw:
+  // G[LINE][BLOCK].cells = ENCODING;
 
   while (1){
     Graph(*Master);
