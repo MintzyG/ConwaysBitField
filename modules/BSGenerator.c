@@ -1,0 +1,77 @@
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+char BSE(char rule[21]){
+  short Sc = 0;
+  short Ec = 0;
+
+  if  (rule[0] != 'B'){ return 0; }
+  for(int i = 0; i < 21; i++){
+    if(rule[i] == 'S') {
+      Sc++;
+    }
+    if(rule[i] == 'E') {
+      Ec++;
+    }
+  }
+  if (Sc != 1 || Ec != 1) return 0;
+  return 1;
+}
+
+char NumberLength(char rule[21]){
+  char B = 0, S = 0;
+  int i = 1;
+  while(B < 10){
+    if(!isalpha(rule[i]) && !ispunct(rule[i])){ B++; }
+    else if (rule[i] == 'S'){ i++; break; }
+    else{ return 0; }
+    i++;
+  }
+  while(S < 10){
+    if(!isalpha(rule[i]) && !ispunct(rule[i])){ S++; }
+    else if(rule[i] == 'E'){ break; }
+    else{ return 0;}
+    i++;
+  }
+
+  for (int i = 1; i < B + 1; i++) {
+    for (int j = 1; j < B + 1; j++) {
+      if(rule[i] == rule[j] && i != j){ return 0; }
+    }
+  }
+
+  for (int i = B + 2; i < (B + 2) + S; i++) {
+    for (int j = B + 2; j < (B + 2) + S; j++) {
+      if(rule[i] == rule[j] && i != j){ return 0; }
+    }
+  }
+
+  for (int i = 0; i < 21; i++) {
+    if(rule[i] == '9'){ return 0; }
+  }
+
+  if(S >= 10 || B >= 10){ return 0; }
+  return 1;
+}
+
+int main(){
+  char rule[21];
+
+  while(1){
+    printf("Please input the ruleset for the game\n");
+    scanf("%s21[^\n]", rule);
+    scanf("%*c");
+    if(BSE(rule)){
+      if(NumberLength(rule)){
+        break;
+      }else{
+        printf("Please enter a valid rule!\n");
+        continue;
+      }
+    } else{
+      printf("Please enter a valid rule!\n");
+      continue;
+    }
+  }
+}
