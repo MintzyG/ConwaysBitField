@@ -91,7 +91,7 @@ int main(){
   fclose(file);
 
   file = fopen("ruleset.c", "w");
-  fprintf(file, "#include \"ruleseset.h\"\n\n");
+  fprintf(file, "#include \"ruleset.h\"\n\n");
   fprintf(file, "char RuleStateManager(char state, char cState) {\n");
   fprintf(file, "  if (cState == 0) {\n");
 
