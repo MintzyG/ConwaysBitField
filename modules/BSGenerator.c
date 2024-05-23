@@ -1,6 +1,5 @@
 #include <ctype.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 
 char BSE(char rule[21]){
@@ -90,30 +89,28 @@ int main(){
   fprintf(file, "char RuleStateManager(char state, char cState);");
   fclose(file);
 
+  short number = 0;
   file = fopen("ruleset.c", "w");
   fprintf(file, "#include \"ruleset.h\"\n\n");
   fprintf(file, "char RuleStateManager(char state, char cState) {\n");
   fprintf(file, "  if (cState == 0) {\n");
+  fprintf(file, "    switch (state){\n");
 
-  // LOGICA DE IF PARA B
-  short number = 0;
   for (int i = 0; i < B; i++) {
-    if (i == 0) {
-      number = strtoul(&rule[i+1], NULL, 10);
-      fprintf(file, "    if (state == %d) {\n      return 1;\n    }", number);
-    } else {
-      number = strtoul(&rule[i+1], NULL, 10);
-      fprintf(file, "    else if (state == %d) {\n      return 1;\n    }", number);
-    }
+    number = rule[i+1] - 48;
+    fprintf(file, "      case %d:\n        return 1;\n", number);
   }
 
-  fprintf(file, " else {\n");
-  fprintf(file, "      return 0;\n    }\n");
+  fprintf(file, "      default:\n        return 0;\n");
+  fprintf(file, "    }\n  } else {\n");
+  fprintf(file, "    switch (state){\n");
 
-  fprintf(file, "  } else {\n");
+  for (int i = B + 2; i < (B + 2) + S; i++) {
+    number = rule[i] - 48;
+    fprintf(file, "      case %d:\n        return 1;\n", number);
+  }
 
-  // LOGICA DE IF PARA S
-
-  fprintf(file, "  }\n}");
+  fprintf(file, "      default:\n        return 0;\n");
+  fprintf(file, "    }\n  }\n}");
   fclose(file);
 }
