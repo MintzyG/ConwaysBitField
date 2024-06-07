@@ -299,7 +299,7 @@ printf("\e[?25l");
   G[_HEIGHT/2][_WIDTH/2].cells = 2;
   G[(_HEIGHT/2) + 1][_WIDTH/2].cells = 1;
   G[(_HEIGHT/2) + 2][_WIDTH/2].cells = 7;
-  // Add a micro-random input (8x1 block)
+  // TODO: Add a micro-random input (8x1 block)
 #endif
 
   // How to draw:
