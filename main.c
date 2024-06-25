@@ -24,7 +24,7 @@
 #endif
 
 #define _WIDTH WIDTH
-#define _HEIGHT 8 * HEIGHT
+#define _HEIGHT (8 * HEIGHT)
 
 #define BLOCK_SIZE 8
 
@@ -44,132 +44,36 @@ union block {
   unsigned char cells;
 };
 
-void SetBlocks(union block* B, short cell, char value) {
-  switch (cell) {
-    case 0:
-      B->cell_group.a = value;
-      break;
-    case 1:
-      B->cell_group.b = value;
-      break;
-    case 2:
-      B->cell_group.c = value;
-      break;
-    case 3:
-      B->cell_group.d = value;
-      break;
-    case 4:
-      B->cell_group.e = value;
-      break;
-    case 5:
-      B->cell_group.f = value;
-      break;
-    case 6:
-      B->cell_group.g = value;
-      break;
-    case 7:
-      B->cell_group.h = value;
-      break;
-    default:
-      printf("Tried to SET out of struct bounds\n");
-      exit(1);
-  };
+inline void SetBlockCell(union block** G, short linha, short coluna, char value) {
+  G[linha][coluna / BLOCK_SIZE].cells = (G[linha][coluna / BLOCK_SIZE].cells & ~(1 << (coluna % BLOCK_SIZE))) | (value << (coluna % BLOCK_SIZE));
 }
 
-void SetBlockCell(union block** G, short linha, short coluna, char value) {
-  union block* B = &(G[linha][coluna/BLOCK_SIZE]);
-  switch (coluna%BLOCK_SIZE) {
-    case 0:
-      B->cell_group.a = value;
-      break;
-    case 1:
-      B->cell_group.b = value;
-      break;
-    case 2:
-      B->cell_group.c = value;
-      break;
-    case 3:
-      B->cell_group.d = value;
-      break;
-    case 4:
-      B->cell_group.e = value;
-      break;
-    case 5:
-      B->cell_group.f = value;
-      break;
-    case 6:
-      B->cell_group.g = value;
-      break;
-    case 7:
-      B->cell_group.h = value;
-      break;
-    default:
-      printf("Tried to SET out of struct bounds\n");
-      exit(1);
-  };
+inline char GetBlockCell(union block G, short index) {
+  return (G.cells >> index) & 1;
 }
 
-char GetBlockCell(union block G, short index) {
-  switch (index) {
-    case 0:
-      return G.cell_group.a;
-    case 1:
-      return G.cell_group.b;
-    case 2:
-      return G.cell_group.c;
-    case 3:
-      return G.cell_group.d;
-    case 4:
-      return G.cell_group.e;
-    case 5:
-      return G.cell_group.f;
-    case 6:
-      return G.cell_group.g;
-    case 7:
-      return G.cell_group.h;
-    default:
-      printf("Tried to GET out of struct bounds\n");
-      exit(1);
-  };
+inline char GetCellHelper(union block** board, short linha, short coluna) {
+  linha = (linha + _HEIGHT) % _HEIGHT;
+  coluna = (coluna + _WIDTH * BLOCK_SIZE) % (_WIDTH * BLOCK_SIZE);
+  return GetBlockCell(board[linha][coluna / BLOCK_SIZE], coluna % BLOCK_SIZE);
 }
 
-char GetCellHelper(union block** board, short linha, short coluna){
-  linha = (linha+(_HEIGHT))%(_HEIGHT);
-  coluna = (coluna+(_WIDTH * BLOCK_SIZE))%(_WIDTH * BLOCK_SIZE);
-  return GetBlockCell(board[linha][coluna/BLOCK_SIZE], coluna%BLOCK_SIZE);
-}
-
-void SetEntireBlock(union block** board, short linha, short coluna, char code) {
-  board[linha][coluna].cells = code;
-}
-
-char GetNeighbours(union block** board, short linha, short coluna) {
-  union block neighbours;
-
-  SetBlocks(&neighbours, 0, GetCellHelper(board, linha - 1,coluna - 1));
-  SetBlocks(&neighbours, 1, GetCellHelper(board, linha - 1,coluna));
-  SetBlocks(&neighbours, 2, GetCellHelper(board, linha - 1,coluna + 1));
-
-  SetBlocks(&neighbours, 3, GetCellHelper(board, linha,coluna - 1));
-  SetBlocks(&neighbours, 4, GetCellHelper(board, linha,coluna + 1));
-
-  SetBlocks(&neighbours, 5, GetCellHelper(board, linha + 1,coluna - 1));
-  SetBlocks(&neighbours, 6, GetCellHelper(board, linha + 1,coluna));
-  SetBlocks(&neighbours, 7, GetCellHelper(board, linha + 1,coluna + 1));
-
+inline char GetNeighbours(union block** board, short linha, short coluna) {
   char count = 0;
-  for (int i = 0; i < BLOCK_SIZE; i++) {
-    count += GetBlockCell(neighbours, i);
-  }
-
-  return RuleStateManager(count, GetBlockCell(board[linha][coluna/BLOCK_SIZE], coluna%BLOCK_SIZE));
+  count += GetCellHelper(board, linha - 1, coluna - 1);
+  count += GetCellHelper(board, linha - 1, coluna);
+  count += GetCellHelper(board, linha - 1, coluna + 1);
+  count += GetCellHelper(board, linha, coluna - 1);
+  count += GetCellHelper(board, linha, coluna + 1);
+  count += GetCellHelper(board, linha + 1, coluna - 1);
+  count += GetCellHelper(board, linha + 1, coluna);
+  count += GetCellHelper(board, linha + 1, coluna + 1);
+  return RuleStateManager(count, GetCellHelper(board, linha, coluna));
 }
 
 void GetBlockNeighbours(union block** board, union block** inverse, short linha, short coluna) {
-  int i;
-
-#pragma omp parallel for private(i)
-  for (i = 0; i < BLOCK_SIZE; i++) {
+#pragma omp parallel for num_threads(THREADS)
+  for (int i = 0; i < BLOCK_SIZE; i++) {
     char state = GetNeighbours(board, linha, coluna * BLOCK_SIZE + i);
     SetBlockCell(inverse, linha, coluna * BLOCK_SIZE + i, state);
   }
@@ -181,8 +85,8 @@ void Graph(union block** board) {
   char output_line[(_WIDTH * BLOCK_SIZE / 2 + 3) * sizeof(wchar_t)];
   int state = 0;
 
-  for(int i = 0; i < (_WIDTH * BLOCK_SIZE / 2) + 2; i++) {line[i] = SEPARATOR;}
-  line[(_WIDTH * BLOCK_SIZE/2) + 2] = L'\0';
+  for (int i = 0; i < (_WIDTH * BLOCK_SIZE / 2) + 2; i++) { line[i] = SEPARATOR; }
+  line[(_WIDTH * BLOCK_SIZE / 2) + 2] = L'\0';
   size_t len = wcstombs(output_line, line, sizeof(output_line));
   fwrite(output_line, sizeof(char), len, stdout);
   fwrite("\n", sizeof(char), 1, stdout);
@@ -193,40 +97,40 @@ void Graph(union block** board) {
     for (int j = 0; j < _WIDTH; j++) {
       for (int k = 0; k < BLOCK_SIZE; k += 2) {
         state = GetBlockCell(board[i][j], k);
-        state += 2 * GetBlockCell(board[i+1][j], k);
-        state += 4 * GetBlockCell(board[i+2][j], k);
-        state += 8 * GetBlockCell(board[i][j], k+1);
-        state += 16 * GetBlockCell(board[i+1][j], k+1);
-        state += 32 * GetBlockCell(board[i+2][j], k+1);
-        state += 64 * GetBlockCell(board[i+3][j], k);
-        state += 128 * GetBlockCell(board[i+3][j], k+1);
+        state += 2 * GetBlockCell(board[i + 1][j], k);
+        state += 4 * GetBlockCell(board[i + 2][j], k);
+        state += 8 * GetBlockCell(board[i][j], k + 1);
+        state += 16 * GetBlockCell(board[i + 1][j], k + 1);
+        state += 32 * GetBlockCell(board[i + 2][j], k + 1);
+        state += 64 * GetBlockCell(board[i + 3][j], k);
+        state += 128 * GetBlockCell(board[i + 3][j], k + 1);
 
         line[(j * BLOCK_SIZE) / 2 + k / 2 + 1] = state + 10240;
       }
     }
 
     line[_WIDTH * BLOCK_SIZE / 2 + 1] = SEPARATOR;
-    line[(_WIDTH * BLOCK_SIZE/2) + 2] = L'\0';
+    line[(_WIDTH * BLOCK_SIZE / 2) + 2] = L'\0';
 
     len = wcstombs(output_line, line, sizeof(output_line));
     fwrite(output_line, sizeof(char), len, stdout);
     fwrite("\n", sizeof(char), 1, stdout);
   }
 
-  for(int i = 0; i < (_WIDTH * BLOCK_SIZE / 2) + 2; i++) {line[i] = SEPARATOR;}
-  line[(_WIDTH * BLOCK_SIZE/2) + 2] = L'\0';
+  for (int i = 0; i < (_WIDTH * BLOCK_SIZE / 2) + 2; i++) { line[i] = SEPARATOR; }
+  line[(_WIDTH * BLOCK_SIZE / 2) + 2] = L'\0';
   len = wcstombs(output_line, line, sizeof(output_line));
   fwrite(output_line, sizeof(char), len, stdout);
   fwrite("\n", sizeof(char), 1, stdout);
 }
 #else
 void Graph(union block** board) {
-  wchar_t chars[4] = {32,9600,9604,9608};
+  wchar_t chars[4] = { 32,9600,9604,9608 };
   wchar_t line[_WIDTH * BLOCK_SIZE + 3];
   char output_line[(_WIDTH * BLOCK_SIZE + 3) * sizeof(wchar_t)];
   int state = 0;
 
-  for(int i = 0; i < (_WIDTH * BLOCK_SIZE) + 2; i++) {line[i] = SEPARATOR;}
+  for (int i = 0; i < (_WIDTH * BLOCK_SIZE) + 2; i++) { line[i] = SEPARATOR; }
   line[(_WIDTH * BLOCK_SIZE) + 2] = L'\0';
   size_t len = wcstombs(output_line, line, sizeof(output_line));
   fwrite(output_line, sizeof(char), len, stdout);
@@ -252,7 +156,7 @@ void Graph(union block** board) {
     fwrite("\n", sizeof(char), 1, stdout);
   }
 
-  for(int i = 0; i < (_WIDTH * BLOCK_SIZE) + 2; i++) {line[i] = SEPARATOR;}
+  for (int i = 0; i < (_WIDTH * BLOCK_SIZE) + 2; i++) { line[i] = SEPARATOR; }
   line[(_WIDTH * BLOCK_SIZE) + 2] = L'\0';
   len = wcstombs(output_line, line, sizeof(output_line));
   fwrite(output_line, sizeof(char), len, stdout);
@@ -261,23 +165,13 @@ void Graph(union block** board) {
 #endif
 
 void Iterate(union block** G, union block** Copy, union block*** Master) {
-  if (*Master == G)
-  { *Master = Copy; }
-  else
-  { *Master = G; }
-
-  for(int i = 0; i < _HEIGHT; i++){
-
-    int j;
-#pragma omp parallel for private(j)
-    for(j = 0; j < _WIDTH; j++){
-      if (*Master == Copy) {
-        GetBlockNeighbours(G, Copy, i, j);
-      } else {
-        GetBlockNeighbours(Copy, G, i, j);
-      }
+#pragma omp parallel for num_threads(THREADS) collapse(2)
+  for (int i = 0; i < _HEIGHT; i++) {
+    for (int j = 0; j < _WIDTH; j++) {
+      GetBlockNeighbours(*Master, (*Master == G) ? Copy : G, i, j);
     }
   }
+  *Master = (*Master == G) ? Copy : G;
 }
 
 int main() {
@@ -285,27 +179,21 @@ int main() {
   printf("\e[?25l");
 
   srand(clock());
-  union block** G = calloc(_HEIGHT, sizeof *G);
-  for (int i = 0; i < _HEIGHT; i++){
-    G[i] = calloc(_WIDTH, sizeof(union block));
-    for (int j = 0; j < _WIDTH; j++) {
-      G[i][j].cells = 0;
-    }
+  union block** G = (union block**)calloc(_HEIGHT, sizeof(union block*));
+  for (int i = 0; i < _HEIGHT; i++) {
+    G[i] = (union block*)calloc(_WIDTH, sizeof(union block));
   }
 
-  union block** Copy = calloc(_HEIGHT, sizeof *Copy);
-  for (int i = 0; i < _HEIGHT; i++){
-    Copy[i] = calloc(_WIDTH, sizeof(union block));
-    for (int j = 0; j < _WIDTH; j++) {
-      Copy[i][j].cells = 0;
-    }
+  union block** Copy = (union block**)calloc(_HEIGHT, sizeof(union block*));
+  for (int i = 0; i < _HEIGHT; i++) {
+    Copy[i] = (union block*)calloc(_WIDTH, sizeof(union block));
   }
 
-  union block*** Master = calloc(1, sizeof *Master);
+  union block*** Master = (union block***)calloc(1, sizeof(union block**));
   *Master = G;
 
-  for(int i = 0; i < _HEIGHT; i++){
-    for(int j = 0; j < _WIDTH; j++){
+  for (int i = 0; i < _HEIGHT; i++) {
+    for (int j = 0; j < _WIDTH; j++) {
 #ifdef RAND
       G[i][j].cells = rand() % 256;
 #else
@@ -315,21 +203,31 @@ int main() {
   }
 
 #ifndef RAND
-  G[_HEIGHT/2][_WIDTH/2].cells = 2;
-  G[(_HEIGHT/2) + 1][_WIDTH/2].cells = 1;
-  G[(_HEIGHT/2) + 2][_WIDTH/2].cells = 7;
-  // TODO: Add a micro-random input (8x1 block)
+  G[_HEIGHT / 2][_WIDTH / 2].cells = 2;
+  G[(_HEIGHT / 2) + 1][_WIDTH / 2].cells = 1;
+  G[(_HEIGHT / 2) + 2][_WIDTH / 2].cells = 7;
 #endif
 
   // How to draw:
   // G[LINE][BLOCK].cells = ENCODING;
 
-  while (1){
+#ifdef SPEEDTEST
+  int iterations = 1000;
+  clock_t start = clock();
+  for (int i = 0; i < iterations; i++) {
+#else
+  while (1) {
+#endif
     Graph(*Master);
     // getchar();
     Iterate(G, Copy, Master);
-    usleep(DELAY*1000);
+    usleep(DELAY * 1000);
     system("clear");
   }
+#ifdef SPEEDTEST
+  clock_t end = clock();
+  double time_spent = (double)(end - start) / CLOCKS_PER_SEC;
+  printf("Time taken for %d iterations: %f seconds\n", iterations, time_spent);
+#endif
   return 0;
 }
