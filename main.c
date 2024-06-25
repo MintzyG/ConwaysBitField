@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <locale.h>
+#include <omp.h>
 
 #include "ruleset.h"
 
@@ -165,55 +166,13 @@ char GetNeighbours(union block** board, short linha, short coluna) {
 }
 
 void GetBlockNeighbours(union block** board, union block** inverse, short linha, short coluna) {
-  switch (THREADS - 7) {
-    default:
-    case 1:
-      for (int i = 0; i < 8; i++) {
-        char state = GetNeighbours(board, linha, coluna * BLOCK_SIZE + i);
-        SetBlockCell(inverse, linha, coluna * BLOCK_SIZE + i, state);
-      }
-      break;
-    case 2:
-      for (int i = 1; i < 8; i += 2) {
-        char state = GetNeighbours(board, linha, coluna * BLOCK_SIZE + i - 1);
-        SetBlockCell(inverse, linha, coluna * BLOCK_SIZE + i - 1, state);
-        state = GetNeighbours(board, linha, coluna * BLOCK_SIZE + i);
-        SetBlockCell(inverse, linha, coluna * BLOCK_SIZE + i, state);
-      }
-      break;
-    case 4:
-      for (int i = 3; i < 8; i += 4) {
-        char state = GetNeighbours(board, linha, coluna * BLOCK_SIZE + i - 3);
-        SetBlockCell(inverse, linha, coluna * BLOCK_SIZE + i - 3, state);
-        state = GetNeighbours(board, linha, coluna * BLOCK_SIZE + i - 2);
-        SetBlockCell(inverse, linha, coluna * BLOCK_SIZE + i - 2, state);
-        state = GetNeighbours(board, linha, coluna * BLOCK_SIZE + i - 1);
-        SetBlockCell(inverse, linha, coluna * BLOCK_SIZE + i - 1, state);
-        state = GetNeighbours(board, linha, coluna * BLOCK_SIZE + i);
-        SetBlockCell(inverse, linha, coluna * BLOCK_SIZE + i, state);
-      }
-      break;
-    case 8:
-      {
-        char state = GetNeighbours(board, linha, coluna * BLOCK_SIZE + 7);
-        SetBlockCell(inverse, linha, coluna * BLOCK_SIZE + 7, state);
-        state = GetNeighbours(board, linha, coluna * BLOCK_SIZE + 6);
-        SetBlockCell(inverse, linha, coluna * BLOCK_SIZE + 6, state);
-        state = GetNeighbours(board, linha, coluna * BLOCK_SIZE + 5);
-        SetBlockCell(inverse, linha, coluna * BLOCK_SIZE + 5, state);
-        state = GetNeighbours(board, linha, coluna * BLOCK_SIZE + 4);
-        SetBlockCell(inverse, linha, coluna * BLOCK_SIZE + 4, state);
-        state = GetNeighbours(board, linha, coluna * BLOCK_SIZE + 3);
-        SetBlockCell(inverse, linha, coluna * BLOCK_SIZE + 3, state);
-        state = GetNeighbours(board, linha, coluna * BLOCK_SIZE + 2);
-        SetBlockCell(inverse, linha, coluna * BLOCK_SIZE + 2, state);
-        state = GetNeighbours(board, linha, coluna * BLOCK_SIZE + 1);
-        SetBlockCell(inverse, linha, coluna * BLOCK_SIZE + 1, state);
-        state = GetNeighbours(board, linha, coluna * BLOCK_SIZE);
-        SetBlockCell(inverse, linha, coluna * BLOCK_SIZE, state);
-      }
-      break;
-  };
+  int i;
+
+#pragma omp parallel for private(i)
+  for (i = 0; i < BLOCK_SIZE; i++) {
+    char state = GetNeighbours(board, linha, coluna * BLOCK_SIZE + i);
+    SetBlockCell(inverse, linha, coluna * BLOCK_SIZE + i, state);
+  }
 }
 
 #ifndef TTY
@@ -307,16 +266,14 @@ void Iterate(union block** G, union block** Copy, union block*** Master) {
   else
   { *Master = G; }
 
-  char state = 0;
   for(int i = 0; i < _HEIGHT; i++){
-    for(int j = 0; j < _WIDTH; j++){
+
+    int j;
+#pragma omp parallel for private(j)
+    for(j = 0; j < _WIDTH; j++){
       if (*Master == Copy) {
-        // state = GetNeighbours(G, i, j);
-        // SetBlockCell(Copy, i, j, state);
         GetBlockNeighbours(G, Copy, i, j);
       } else {
-        // state = GetNeighbours(Copy, i, j);
-        // SetBlockCell(G, i, j, state);
         GetBlockNeighbours(Copy, G, i, j);
       }
     }
@@ -324,8 +281,8 @@ void Iterate(union block** G, union block** Copy, union block*** Master) {
 }
 
 int main() {
-setlocale(LC_ALL, "");
-printf("\e[?25l");
+  setlocale(LC_ALL, "");
+  printf("\e[?25l");
 
   srand(clock());
   union block** G = calloc(_HEIGHT, sizeof *G);
