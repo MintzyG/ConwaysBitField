@@ -43,7 +43,7 @@ echo "What delay do you want 1ms - 1000ms:"
 read -r Delay
 Delay=${Delay:-100}
 
-gcc_cmd="gcc main.c modules/ruleset.c -o game.out -DTHREADS=$Threads -DDELAY=$Delay -DWIDTH=$Width -DHEIGHT=$Height -Wall -Wextra -O3 -Imodules"
+gcc_cmd="gcc main.c modules/ruleset.c -o game.out -DSPEEDTEST -DTHREADS=$Threads -DDELAY=$Delay -DWIDTH=$Width -DHEIGHT=$Height -Wall -Wextra -O3 -Imodules -fopenmp"
 
 if [[ "$Rand" == "Y" || "$Rand" == "y" ]]; then
   gcc_cmd+=" -DRAND"
