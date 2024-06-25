@@ -74,8 +74,7 @@ inline char GetNeighbours(union block** board, short linha, short coluna) {
 void GetBlockNeighbours(union block** board, union block** inverse, short linha, short coluna) {
 #pragma omp parallel for num_threads(THREADS)
   for (int i = 0; i < BLOCK_SIZE; i++) {
-    char state = GetNeighbours(board, linha, coluna * BLOCK_SIZE + i);
-    SetBlockCell(inverse, linha, coluna * BLOCK_SIZE + i, state);
+    SetBlockCell(inverse, linha, coluna * BLOCK_SIZE + i, GetNeighbours(board, linha, coluna * BLOCK_SIZE + i));
   }
 }
 
@@ -165,6 +164,7 @@ void Graph(union block** board) {
 #endif
 
 void Iterate(union block** G, union block** Copy, union block*** Master) {
+  #pragma omp parallel for num_threads(THREADS) collapse(2)
   for (int i = 0; i < _HEIGHT; i++) {
     for (int j = 0; j < _WIDTH; j++) {
       GetBlockNeighbours(*Master, (*Master == G) ? Copy : G, i, j);
