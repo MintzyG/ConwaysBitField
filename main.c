@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <time.h>
 #include <locale.h>
-#include <omp.h>
 
 #include "ruleset.h"
 
@@ -72,7 +71,6 @@ inline char GetNeighbours(union block** board, short linha, short coluna) {
 }
 
 void GetBlockNeighbours(union block** board, union block** inverse, short linha, short coluna) {
-#pragma omp parallel for num_threads(THREADS)
   for (int i = 0; i < BLOCK_SIZE; i++) {
     SetBlockCell(inverse, linha, coluna * BLOCK_SIZE + i, GetNeighbours(board, linha, coluna * BLOCK_SIZE + i));
   }
@@ -164,7 +162,6 @@ void Graph(union block** board) {
 #endif
 
 void Iterate(union block** G, union block** Copy, union block*** Master) {
-  #pragma omp parallel for num_threads(THREADS) collapse(2)
   for (int i = 0; i < _HEIGHT; i++) {
     for (int j = 0; j < _WIDTH; j++) {
       GetBlockNeighbours(*Master, (*Master == G) ? Copy : G, i, j);
@@ -216,18 +213,18 @@ int main() {
   clock_gettime(CLOCK_MONOTONIC, &start);
   for (int i = 0; i < iterations; i++) {
 #else
-  while (1) {
+    while (1) {
 #endif
-    Graph(*Master);
-    // getchar();
-    Iterate(G, Copy, Master);
-    usleep(DELAY * 1000);
-    system("clear");
-  }
+      Graph(*Master);
+      // getchar();
+      Iterate(G, Copy, Master);
+      usleep(DELAY * 1000);
+      printf("\e[1;1H\e[2J");
+    }
 #ifdef SPEEDTEST
-  clock_gettime(CLOCK_MONOTONIC, &end);
-  double time_spent = (end.tv_sec - start.tv_sec) * 1e6 + (end.tv_nsec - start.tv_nsec) / 1e3;
-  printf("Time taken for %d iterations: %f microseconds\n", iterations, time_spent);
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    double time_spent = (end.tv_sec - start.tv_sec) * 1e6 + (end.tv_nsec - start.tv_nsec) / 1e3;
+    printf("Time taken for %d iterations: %f microseconds\n", iterations, time_spent);
 #endif
-  return 0;
-}
+    return 0;
+  }
