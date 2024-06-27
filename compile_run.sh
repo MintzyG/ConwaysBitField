@@ -15,6 +15,10 @@ echo "Are you going to run it through tty? (y/Y | n/N)"
 read -r Tty
 Tty=${Tty:-N}
 
+echo "Do you want to use speedtest mode? (y/Y | n/N)"
+read -r Speed
+Speed=${Speed:-N}
+
 if [[ "$Max" == "N" || "$Max" == "n" ]]; then
   echo "How tall do you want the matrix from 1-16:"
   read -r Height
@@ -51,6 +55,10 @@ fi
 
 if [[ "$Tty" == "Y" || "$Tty" == "y" ]]; then
   gcc_cmd+=" -DTTY"
+fi
+
+if [[ "$Speed" == "Y" || "$Speed" == "y" ]]; then
+  gcc_cmd+=" -DSPEEDTEST"
 fi
 
 eval "$gcc_cmd" && ./game.out
