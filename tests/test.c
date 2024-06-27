@@ -52,6 +52,23 @@ void Graph(block** board) {
   fwrite("\n", sizeof(char), 1, stdout);
 }
 
+short Coord(short c) {
+  return (c + _HEIGHT) % _HEIGHT;
+}
+
+char IsAlone(block** G, short x, short y) {
+  char alone  = G[x][y].cells;                          // atual
+  alone += G[Coord(x-1)][y].cells;                      // baixo
+  alone += G[Coord(x+1)][y].cells;                      // cima
+  alone += GetBlockCell(G[Coord(x-1)][Coord(y-1)], 7);  // esq sup 
+  alone += GetBlockCell(G[x][Coord(y-1)], 7);           // esq
+  alone += GetBlockCell(G[Coord(x+1)][Coord(y-1)], 7);  // esq inf
+  alone += GetBlockCell(G[Coord(x-1)][Coord(y+1)], 0);  // dir sup
+  alone += GetBlockCell(G[x][Coord(y+1)], 0);           // dir 
+  alone += GetBlockCell(G[Coord(x+1)][Coord(y+1)], 0);  // dir inf
+  return alone;
+}
+
 
 int main(){
   setlocale(LC_ALL, "");
@@ -76,7 +93,12 @@ int main(){
     int x = rand()%64;
     int y = rand()%8;
     int index = rand()%2;
-    SetBlockCell(G, x, y, index);
+
+    if(!IsAlone(G, x, y)) {
+      // SetBlockCell(G, x, y, index);
+      continue;
+    }
+
   }
   clock_gettime(CLOCK_MONOTONIC, &end);
   double time_spent = (end.tv_sec - start.tv_sec) * 1e6 + (end.tv_nsec - start.tv_nsec) / 1e3;

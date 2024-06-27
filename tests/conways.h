@@ -22,3 +22,4 @@ union block {
 
 void SetBlockCell(block** G, short linha, short coluna, char value);
 char GetBlockCell(block G, short index);
+char GetCellHelper(block** board, short linha, short coluna);
