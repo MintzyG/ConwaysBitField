@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <locale.h>
+#include <ncurses.h>
 
 #include "ruleset.h"
 
@@ -82,11 +83,12 @@ void Graph(union block** board) {
   char output_line[(_WIDTH * BLOCK_SIZE / 2 + 3) * sizeof(wchar_t)];
   int state = 0;
 
+  move(0, 0);
+
   for (int i = 0; i < (_WIDTH * BLOCK_SIZE / 2) + 2; i++) { line[i] = SEPARATOR; }
   line[(_WIDTH * BLOCK_SIZE / 2) + 2] = L'\0';
   size_t len = wcstombs(output_line, line, sizeof(output_line));
-  fwrite(output_line, sizeof(char), len, stdout);
-  fwrite("\n", sizeof(char), 1, stdout);
+  printw("%s\n", output_line);
 
   for (int i = 0; i < _HEIGHT; i += 4) {
     line[0] = SEPARATOR;
@@ -110,15 +112,14 @@ void Graph(union block** board) {
     line[(_WIDTH * BLOCK_SIZE / 2) + 2] = L'\0';
 
     len = wcstombs(output_line, line, sizeof(output_line));
-    fwrite(output_line, sizeof(char), len, stdout);
-    fwrite("\n", sizeof(char), 1, stdout);
+    printw("%s\n", output_line);
   }
 
   for (int i = 0; i < (_WIDTH * BLOCK_SIZE / 2) + 2; i++) { line[i] = SEPARATOR; }
   line[(_WIDTH * BLOCK_SIZE / 2) + 2] = L'\0';
   len = wcstombs(output_line, line, sizeof(output_line));
-  fwrite(output_line, sizeof(char), len, stdout);
-  fwrite("\n", sizeof(char), 1, stdout);
+  printw("%s\n", output_line);
+  refresh();
 }
 #else
 void Graph(union block** board) {
@@ -127,11 +128,12 @@ void Graph(union block** board) {
   char output_line[(_WIDTH * BLOCK_SIZE + 3) * sizeof(wchar_t)];
   int state = 0;
 
+  move(0, 0);
+
   for (int i = 0; i < (_WIDTH * BLOCK_SIZE) + 2; i++) { line[i] = SEPARATOR; }
   line[(_WIDTH * BLOCK_SIZE) + 2] = L'\0';
   size_t len = wcstombs(output_line, line, sizeof(output_line));
-  fwrite(output_line, sizeof(char), len, stdout);
-  fwrite("\n", sizeof(char), 1, stdout);
+  printw("%s\n", output_line);
 
   for (int i = 0; i < _HEIGHT; i += 2) {
     line[0] = SEPARATOR;
@@ -149,18 +151,16 @@ void Graph(union block** board) {
     line[(_WIDTH * BLOCK_SIZE) + 2] = L'\0';
 
     len = wcstombs(output_line, line, sizeof(output_line));
-    fwrite(output_line, sizeof(char), len, stdout);
-    fwrite("\n", sizeof(char), 1, stdout);
+    printw("%s\n", output_line);
   }
 
   for (int i = 0; i < (_WIDTH * BLOCK_SIZE) + 2; i++) { line[i] = SEPARATOR; }
   line[(_WIDTH * BLOCK_SIZE) + 2] = L'\0';
   len = wcstombs(output_line, line, sizeof(output_line));
-  fwrite(output_line, sizeof(char), len, stdout);
-  fwrite("\n", sizeof(char), 1, stdout);
+  printw("%s\n", output_line);
+  refresh();
 }
 #endif
-
 void Iterate(union block** G, union block** Copy, union block*** Master) {
   for (int i = 0; i < _HEIGHT; i++) {
     for (int j = 0; j < _WIDTH; j++) {
@@ -170,9 +170,78 @@ void Iterate(union block** G, union block** Copy, union block*** Master) {
   *Master = (*Master == G) ? Copy : G;
 }
 
+void setupExtendedMouse() {
+    printf("\033[?1003h"); // Enable mouse movement tracking
+    printf("\033[?1015h"); // Enable urxvt-style mouse mode
+    printf("\033[?1006h"); // Enable SGR extended mouse coordinates
+}
+
+bool getSubCellPosition(MEVENT *event, float *subX, float *subY) {
+    if (event->bstate & REPORT_MOUSE_POSITION) {
+        *subX = ((event->bstate >> 16) & 0xFF) / 255.0;
+        *subY = ((event->bstate >> 24) & 0xFF) / 255.0;
+        return true;
+    }
+    *subX = 0.5;
+    *subY = 0.5;
+    return false;
+}
+
+void handleMouseClick(int y, int x, union block** board) {
+    if (y <= 0 || x <= 0) return;
+
+    MEVENT event;
+    getmouse(&event);
+
+    float subX, subY;
+    getSubCellPosition(&event, &subX, &subY);
+#ifndef TTY
+    if (y >= _HEIGHT/4 + 1 || x >= (_WIDTH * BLOCK_SIZE)/2 + 1) return;
+
+    y--;
+    x--;
+    int baseX = x * 2;
+    int baseY = y * 4;
+    int columnOffset = (subX >= 0.5) ? 1 : 0;
+    int rowOffset;
+
+    if (subY < 0.25) rowOffset = 0;
+    else if (subY < 0.5) rowOffset = 1;
+    else if (subY < 0.75) rowOffset = 2;
+    else rowOffset = 3;
+
+    int cellX = baseX + columnOffset;
+    int cellY = baseY + rowOffset;
+#else
+    if (y >= _HEIGHT/2 + 1 || x >= _WIDTH * BLOCK_SIZE + 1) return;
+
+    y--;
+    x--;
+    int baseX = x;
+    int baseY = y * 2;
+    int cellX = baseX;
+    int cellY = baseY + ((subY >= 0.5) ? 1 : 0);
+#endif
+    if (cellX < _WIDTH * BLOCK_SIZE && cellY < _HEIGHT) {
+        char currentValue = GetCellHelper(board, cellY, cellX);
+        SetBlockCell(board, cellY, cellX, !currentValue);
+    }
+}
+
 int main() {
   setlocale(LC_ALL, "");
-  printf("\e[?25l");
+  initscr();
+  cbreak();
+  noecho();
+  curs_set(0);
+  keypad(stdscr, TRUE);
+  timeout(0);
+  mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL);
+  setupExtendedMouse();
+
+  bool paused = false;
+  MEVENT event;
+  int ch;
 
   srand(clock());
   union block** G = (union block**)calloc(_HEIGHT, sizeof(union block*));
@@ -215,16 +284,27 @@ int main() {
 #else
     while (1) {
 #endif
+      ch = getch();
+      if (ch == 'q' || ch == 'Q') { break; }
+      if (ch == ' ') { paused = !paused; }
+      if (ch == KEY_MOUSE && paused) {
+        if (getmouse(&event) == OK) {
+          handleMouseClick(event.y, event.x, *Master);
+        }
+      }
       Graph(*Master);
       // getchar();
-      Iterate(G, Copy, Master);
+      if (!paused) {
+        Iterate(G, Copy, Master);
+      }
       usleep(DELAY * 1000);
-      printf("\e[1;1H\e[2J");
+      move(0, 0);
     }
 #ifdef SPEEDTEST
     clock_gettime(CLOCK_MONOTONIC, &end);
     double time_spent = (end.tv_sec - start.tv_sec) * 1e6 + (end.tv_nsec - start.tv_nsec) / 1e3;
     printf("Time taken for %d iterations: %f microseconds\n", iterations, time_spent);
 #endif
+    endwin();
     return 0;
   }
