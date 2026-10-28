@@ -43,21 +43,21 @@ union block {
   unsigned char cells;
 };
 
-inline void SetBlockCell(union block** G, short linha, short coluna, char value) {
+static inline void SetBlockCell(union block** G, short linha, short coluna, char value) {
   G[linha][coluna / BLOCK_SIZE].cells = (G[linha][coluna / BLOCK_SIZE].cells & ~(1 << (coluna % BLOCK_SIZE))) | (value << (coluna % BLOCK_SIZE));
 }
 
-inline char GetBlockCell(union block G, short index) {
+static inline char GetBlockCell(union block G, short index) {
   return (G.cells >> index) & 1;
 }
 
-inline char GetCellHelper(union block** board, short linha, short coluna) {
+static inline char GetCellHelper(union block** board, short linha, short coluna) {
   linha = (linha + _HEIGHT) % _HEIGHT;
   coluna = (coluna + _WIDTH * BLOCK_SIZE) % (_WIDTH * BLOCK_SIZE);
   return GetBlockCell(board[linha][coluna / BLOCK_SIZE], coluna % BLOCK_SIZE);
 }
 
-inline char GetNeighbours(union block** board, short linha, short coluna) {
+static inline char GetNeighbours(union block** board, short linha, short coluna) {
   char count = 0;
   count += GetCellHelper(board, linha - 1, coluna - 1);
   count += GetCellHelper(board, linha - 1, coluna);

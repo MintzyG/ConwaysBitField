@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 
 pushd ./modules || exit
+gcc BSGenerator.c -o out.out || exit
 ./out.out
 popd || exit
 
-Threads=$(lscpu | grep -i CPU\(s\): | grep -o -E '[0-9]+')
+Threads=$(nproc)
 echo $Threads
 
 echo "Do you want a max size board? (y/Y | n/N)"
