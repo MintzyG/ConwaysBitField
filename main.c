@@ -35,17 +35,24 @@
 #define TAIL_BITS (CELLS_W - (WORDS - 1) * 64)
 #define TAIL_MASK (TAIL_BITS == 64 ? ~0ULL : (1ULL << TAIL_BITS) - 1)
 
-/* Each row is WORDS uint64_t, bit k of word j = column 64*j + k.
- * Bits past the last column are kept at zero. */
+/* A board is one block of _HEIGHT rows x WORDS uint64_t; bit k of word j in
+ * a row = column 64*j + k. Bits past the last column are kept at zero. */
 typedef uint64_t row_word;
 
-static inline char GetCell(row_word** board, int linha, int coluna) {
-  return (board[linha][coluna / 64] >> (coluna % 64)) & 1;
+#define ROW(board, linha) ((board) + (size_t)(linha) * WORDS)
+
+static row_word* NewBoard(void) {
+  return (row_word*)calloc((size_t)_HEIGHT * WORDS, sizeof(row_word));
 }
 
-static inline void SetCell(row_word** board, int linha, int coluna, char value) {
+static inline char GetCell(const row_word* board, int linha, int coluna) {
+  return (ROW(board, linha)[coluna / 64] >> (coluna % 64)) & 1;
+}
+
+static inline void SetCell(row_word* board, int linha, int coluna, char value) {
   row_word bit = 1ULL << (coluna % 64);
-  board[linha][coluna / 64] = (board[linha][coluna / 64] & ~bit) | (value ? bit : 0);
+  row_word* w = &ROW(board, linha)[coluna / 64];
+  *w = (*w & ~bit) | (value ? bit : 0);
 }
 
 /* Row shifted so each bit holds its west / east neighbour, wrapping around. */
@@ -85,7 +92,7 @@ static inline row_word StepWord(const row_word* up, const row_word* mid, const r
 }
 
 #ifndef TTY
-void Graph(row_word** board) {
+void Graph(const row_word* board) {
   wchar_t line[_WIDTH * BLOCK_SIZE / 2 + 3];
   char output_line[(_WIDTH * BLOCK_SIZE / 2 + 3) * sizeof(wchar_t)];
   int state = 0;
@@ -129,7 +136,7 @@ void Graph(row_word** board) {
   fwrite("\n", sizeof(char), 1, stdout);
 }
 #else
-void Graph(row_word** board) {
+void Graph(const row_word* board) {
   wchar_t chars[4] = { 32,9600,9604,9608 };
   wchar_t line[_WIDTH * BLOCK_SIZE + 3];
   char output_line[(_WIDTH * BLOCK_SIZE + 3) * sizeof(wchar_t)];
@@ -169,17 +176,19 @@ void Graph(row_word** board) {
 }
 #endif
 
-void Iterate(row_word** G, row_word** Copy, row_word*** Master) {
-  row_word** src = *Master;
-  row_word** dst = (src == G) ? Copy : G;
+/* Writes the next generation of *board into *scratch, then swaps them. */
+void Iterate(row_word** board, row_word** scratch) {
+  const row_word* src = *board;
+  row_word* dst = *scratch;
   for (int i = 0; i < _HEIGHT; i++) {
-    const row_word* up = src[i ? i - 1 : _HEIGHT - 1];
-    const row_word* down = src[i + 1 < _HEIGHT ? i + 1 : 0];
+    const row_word* up = ROW(src, i ? i - 1 : _HEIGHT - 1);
+    const row_word* down = ROW(src, i + 1 < _HEIGHT ? i + 1 : 0);
     for (int j = 0; j < WORDS; j++) {
-      dst[i][j] = StepWord(up, src[i], down, j);
+      ROW(dst, i)[j] = StepWord(up, ROW(src, i), down, j);
     }
   }
-  *Master = dst;
+  *scratch = *board;
+  *board = dst;
 }
 
 int main() {
@@ -187,18 +196,8 @@ int main() {
   printf("\e[?25l");
 
   srand(clock());
-  row_word** G = (row_word**)calloc(_HEIGHT, sizeof(row_word*));
-  for (int i = 0; i < _HEIGHT; i++) {
-    G[i] = (row_word*)calloc(WORDS, sizeof(row_word));
-  }
-
-  row_word** Copy = (row_word**)calloc(_HEIGHT, sizeof(row_word*));
-  for (int i = 0; i < _HEIGHT; i++) {
-    Copy[i] = (row_word*)calloc(WORDS, sizeof(row_word));
-  }
-
-  row_word*** Master = (row_word***)calloc(1, sizeof(row_word**));
-  *Master = G;
+  row_word* G = NewBoard();
+  row_word* Copy = NewBoard();
 
 #ifdef RAND
   for (int i = 0; i < _HEIGHT; i++) {
@@ -227,9 +226,9 @@ int main() {
 #else
     while (1) {
 #endif
-      Graph(*Master);
+      Graph(G);
       // getchar();
-      Iterate(G, Copy, Master);
+      Iterate(&G, &Copy);
       usleep(DELAY * 1000);
       printf("\e[1;1H\e[2J");
     }
