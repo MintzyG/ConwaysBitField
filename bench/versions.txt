@@ -12,4 +12,4 @@ e0ed8df | 2024-06-25 no OMP in Iterate
 c92132c | 2024-06-25 OMP back in Iterate
 f602a4f | 2024-06-27 OMP removed
 c80104a | 2026-10-27 HEAD
-WORKTREE | #1 64-bit rows
+2ec9834 | #1 64-bit rows

@@ -45,8 +45,8 @@ def git(*args):
 def load_versions(path):
     versions = []
     for line in Path(path).read_text().splitlines():
-        line = line.split("#", 1)[0].strip()
-        if line:
+        line = line.strip()
+        if line and not line.startswith("#"):
             ref, label = (part.strip() for part in line.split("|", 1))
             versions.append((ref, label))
     return versions
