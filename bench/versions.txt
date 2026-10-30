@@ -15,3 +15,5 @@ c80104a | 2026-10-27 HEAD
 2ec9834 | #1 64-bit rows
 10b363e | #2 generated rule
 a042293 | #3 adder tree
+37a9f9d | #4 contiguous board
+b5cba44 | #5 branch-free interior
