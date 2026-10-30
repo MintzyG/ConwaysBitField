@@ -73,6 +73,8 @@ def build(ref, label, src, size, cflags):
         size_macros = [f"-DWIDTH={size // 8}", f"-DHEIGHT={size // 8}"]
     if "uint64_t" in src:
         size_macros.append("-DBENCH_WORDS")
+    if "NewBoard" in src:
+        size_macros.append("-DBENCH_FLAT")
 
     exe = out_dir / f"driver_{size}"
     cmd = ["gcc", *cflags.split(), "-fgnu89-inline", "-fopenmp", "-w",
@@ -178,11 +180,16 @@ def main():
     ap.add_argument("--timeout", type=int, default=600)
     ap.add_argument("--append", action="store_true", help="keep results of versions not re-run")
     ap.add_argument("--summarize", action="store_true", help="only rebuild summary.csv")
+    ap.add_argument("--results", help="write CSVs here instead of bench/results (for scratch runs)")
     args = ap.parse_args()
+
+    global RESULTS
+    if args.results:
+        RESULTS = Path(args.results).resolve()
 
     versions = load_versions(args.versions)
     order = [label for _, label in versions]
-    RESULTS.mkdir(exist_ok=True)
+    RESULTS.mkdir(parents=True, exist_ok=True)
     if args.summarize:
         summarize(order)
         return
