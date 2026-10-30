@@ -19,6 +19,15 @@
 
 #include "api.h"
 
+/* Reference rule as bitmasks: bit n set = born / survives with n neighbours.
+ * Default B3/S23; override to check a version built with another rule. */
+#ifndef BENCH_BIRTH
+#define BENCH_BIRTH 0x008
+#endif
+#ifndef BENCH_SURVIVE
+#define BENCH_SURVIVE 0x00C
+#endif
+
 #define MIN_SAMPLE_NS 20000.0
 #define MIN_SAMPLES 30
 #define MAX_SAMPLES 5000
@@ -54,7 +63,7 @@ static void ref_step(const unsigned char* src, unsigned char* dst, int n) {
         for (int dc = -1; dc <= 1; dc++)
           if (dr || dc) count += src[((r + dr + n) % n) * n + (c + dc + n) % n];
       int alive = src[r * n + c];
-      dst[r * n + c] = count == 3 || (count == 2 && alive);
+      dst[r * n + c] = ((alive ? BENCH_SURVIVE : BENCH_BIRTH) >> count) & 1;
     }
 }
 
