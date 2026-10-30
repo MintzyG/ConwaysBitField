@@ -1,0 +1,15 @@
+# ref | label        (first entry is the speedup baseline; WORKTREE = current main.c)
+c899a49 | 2024-05-14 initial
+1baff3d | 2024-05-16 neighbour finding
+0b7ab9f | 2024-05-16 SetBlocks
+6b2f908 | 2024-05-16 any resolution
+33069e9 | 2024-05-17 short coords
+69f6dfc | 2024-05-23 RuleStateManager
+39231e3 | 2024-06-20 per-block neighbours
+7060f0e | 2024-06-25 OpenMP
+4adb8a7 | 2024-06-25 bit-op getters
+e0ed8df | 2024-06-25 no OMP in Iterate
+c92132c | 2024-06-25 OMP back in Iterate
+f602a4f | 2024-06-27 OMP removed
+c80104a | 2026-10-27 HEAD
+WORKTREE | #1 64-bit rows
