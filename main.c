@@ -59,22 +59,26 @@ static inline row_word East(const row_word* r, int j) {
   return (r[j] >> 1) | (r[j + 1] << 63);
 }
 
+/* Full adder on 64 lanes: s = x + y + z (low bit), c = carry. */
+#define FULL_ADD(x, y, z, s, c) do { row_word t_ = (x) ^ (y); (s) = t_ ^ (z); (c) = ((x) & (y)) | (t_ & (z)); } while (0)
+
 /* Steps 64 cells at once: the 8 neighbours of every cell are shifted copies
  * of the rows around it, summed into a 4-bit counter held as bitplanes
- * s0..s3 (bit k of sN = bit N of cell k's neighbour count). */
+ * s0..s3 (bit k of sN = bit N of cell k's neighbour count).
+ * Sum each row of neighbours first (top and bottom 0..3, middle 0..2),
+ * then add the three row sums digit by digit. */
 static inline row_word StepWord(const row_word* up, const row_word* mid, const row_word* down, int j) {
-  row_word n[8] = { West(up, j), up[j], East(up, j), West(mid, j), East(mid, j),
-                    West(down, j), down[j], East(down, j) };
-  row_word s0 = 0, s1 = 0, s2 = 0, s3 = 0;
-  for (int k = 0; k < 8; k++) {
-    row_word c0 = s0 & n[k];
-    s0 ^= n[k];
-    row_word c1 = s1 & c0;
-    s1 ^= c0;
-    row_word c2 = s2 & c1;
-    s2 ^= c1;
-    s3 |= c2;
-  }
+  row_word a0, a1, c0, c1;
+  FULL_ADD(West(up, j), up[j], East(up, j), a0, a1);
+  FULL_ADD(West(down, j), down[j], East(down, j), c0, c1);
+  row_word mw = West(mid, j), me = East(mid, j);
+  row_word b0 = mw ^ me, b1 = mw & me;
+
+  row_word s0, k0, t, k1;
+  FULL_ADD(a0, b0, c0, s0, k0);  /* 1s */
+  FULL_ADD(a1, b1, c1, t, k1);   /* 2s, plus the carry from the 1s below */
+  row_word s1 = t ^ k0, k1b = t & k0;
+  row_word s2 = k1 ^ k1b, s3 = k1 & k1b;
 
   row_word next = RuleBits(s0, s1, s2, s3, mid[j]);  /* generated into ruleset.h */
   return j == WORDS - 1 ? next & TAIL_MASK : next;
