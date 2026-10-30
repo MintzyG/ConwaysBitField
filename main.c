@@ -48,21 +48,6 @@ static inline void SetCell(row_word** board, int linha, int coluna, char value) 
   board[linha][coluna / 64] = (board[linha][coluna / 64] & ~bit) | (value ? bit : 0);
 }
 
-/* Rule as the list of (neighbour count, current state) pairs that live,
- * read once from RuleStateManager so custom B/S rules keep working. */
-static char rule_count[18], rule_alive[18];
-static int rule_len;
-
-static void LoadRule(void) {
-  rule_len = 0;
-  for (char alive = 0; alive <= 1; alive++)
-    for (char n = 0; n <= 8; n++)
-      if (RuleStateManager(n, alive)) {
-        rule_count[rule_len] = n;
-        rule_alive[rule_len++] = alive;
-      }
-}
-
 /* Row shifted so each bit holds its west / east neighbour, wrapping around. */
 static inline row_word West(const row_word* r, int j) {
   row_word carry = j ? r[j - 1] >> 63 : (r[WORDS - 1] >> (TAIL_BITS - 1)) & 1;
@@ -91,12 +76,7 @@ static inline row_word StepWord(const row_word* up, const row_word* mid, const r
     s3 |= c2;
   }
 
-  row_word next = 0;
-  for (int r = 0; r < rule_len; r++) {
-    int c = rule_count[r];
-    row_word match = (c & 1 ? s0 : ~s0) & (c & 2 ? s1 : ~s1) & (c & 4 ? s2 : ~s2) & (c & 8 ? s3 : ~s3);
-    next |= match & (rule_alive[r] ? mid[j] : ~mid[j]);
-  }
+  row_word next = RuleBits(s0, s1, s2, s3, mid[j]);  /* generated into ruleset.h */
   return j == WORDS - 1 ? next & TAIL_MASK : next;
 }
 
@@ -186,12 +166,6 @@ void Graph(row_word** board) {
 #endif
 
 void Iterate(row_word** G, row_word** Copy, row_word*** Master) {
-  static char rule_loaded = 0;
-  if (!rule_loaded) {
-    LoadRule();
-    rule_loaded = 1;
-  }
-
   row_word** src = *Master;
   row_word** dst = (src == G) ? Copy : G;
   for (int i = 0; i < _HEIGHT; i++) {
