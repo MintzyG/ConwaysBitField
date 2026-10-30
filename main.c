@@ -74,11 +74,12 @@ static inline row_word East(const row_word* r, int j) {
  * s0..s3 (bit k of sN = bit N of cell k's neighbour count).
  * Sum each row of neighbours first (top and bottom 0..3, middle 0..2),
  * then add the three row sums digit by digit. */
-static inline row_word StepWord(const row_word* up, const row_word* mid, const row_word* down, int j) {
+static inline row_word StepBits(row_word uw, row_word u, row_word ue,
+                                row_word mw, row_word m, row_word me,
+                                row_word dw, row_word d, row_word de) {
   row_word a0, a1, c0, c1;
-  FULL_ADD(West(up, j), up[j], East(up, j), a0, a1);
-  FULL_ADD(West(down, j), down[j], East(down, j), c0, c1);
-  row_word mw = West(mid, j), me = East(mid, j);
+  FULL_ADD(uw, u, ue, a0, a1);
+  FULL_ADD(dw, d, de, c0, c1);
   row_word b0 = mw ^ me, b1 = mw & me;
 
   row_word s0, k0, t, k1;
@@ -87,9 +88,21 @@ static inline row_word StepWord(const row_word* up, const row_word* mid, const r
   row_word s1 = t ^ k0, k1b = t & k0;
   row_word s2 = k1 ^ k1b, s3 = k1 & k1b;
 
-  row_word next = RuleBits(s0, s1, s2, s3, mid[j]);  /* generated into ruleset.h */
+  return RuleBits(s0, s1, s2, s3, m);  /* generated into ruleset.h */
+}
+
+/* Any word, including the first and last, which wrap around the row and may
+ * end in unused bits. */
+static inline row_word StepEdgeWord(const row_word* up, const row_word* mid, const row_word* down, int j) {
+  row_word next = StepBits(West(up, j), up[j], East(up, j),
+                           West(mid, j), mid[j], East(mid, j),
+                           West(down, j), down[j], East(down, j));
   return j == WORDS - 1 ? next & TAIL_MASK : next;
 }
+
+/* A word with neighbours on both sides in the same row: no wrap, no tail. */
+#define WEST_IN(r, j) (((r)[j] << 1) | ((r)[(j) - 1] >> 63))
+#define EAST_IN(r, j) (((r)[j] >> 1) | ((r)[(j) + 1] << 63))
 
 #ifndef TTY
 void Graph(const row_word* board) {
@@ -183,9 +196,15 @@ void Iterate(row_word** board, row_word** scratch) {
   for (int i = 0; i < _HEIGHT; i++) {
     const row_word* up = ROW(src, i ? i - 1 : _HEIGHT - 1);
     const row_word* down = ROW(src, i + 1 < _HEIGHT ? i + 1 : 0);
-    for (int j = 0; j < WORDS; j++) {
-      ROW(dst, i)[j] = StepWord(up, ROW(src, i), down, j);
+    const row_word* mid = ROW(src, i);
+    row_word* out = ROW(dst, i);
+    out[0] = StepEdgeWord(up, mid, down, 0);
+    for (int j = 1; j < WORDS - 1; j++) {
+      out[j] = StepBits(WEST_IN(up, j), up[j], EAST_IN(up, j),
+                        WEST_IN(mid, j), mid[j], EAST_IN(mid, j),
+                        WEST_IN(down, j), down[j], EAST_IN(down, j));
     }
+    if (WORDS > 1) out[WORDS - 1] = StepEdgeWord(up, mid, down, WORDS - 1);
   }
   *scratch = *board;
   *board = dst;
